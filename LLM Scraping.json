@@ -1,0 +1,2600 @@
+{
+  "name": "LLM Scraping",
+  "nodes": [
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        160,
+        752
+      ],
+      "id": "326c1f0d-712b-47b8-8e69-5ec1f794055b",
+      "name": "When clicking ‘Execute workflow’"
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1s-eel-kPzgk6ldgLjeWt7p8WapTjCKAWZh2So8q88S8",
+          "mode": "list",
+          "cachedResultName": "LLM Scraping",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1s-eel-kPzgk6ldgLjeWt7p8WapTjCKAWZh2So8q88S8/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "gym_clothing_prompts",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1s-eel-kPzgk6ldgLjeWt7p8WapTjCKAWZh2So8q88S8/edit#gid=0"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        608,
+        752
+      ],
+      "id": "3c1a5332-7655-4079-8408-467808d7f117",
+      "name": "Get row(s) in sheet",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "FBwaBF4NdPJxzqCu",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Input items = rows from gym_clothing_prompts\n// We’ll emit one item per prompt with a ready-to-send user message\n// and keep the metadata we need later.\n\nconst TARGET_BRANDS = [\n  \"Nike\",\n  \"Lululemon\",\n  \"Gymshark\",\n  \"Alo\",\n  \"Under Armour\",\n  \"New Balance\"\n];\n\nreturn items.map(it => {\n  const { prompt_id, prompt_text } = it.json;\n\n  const userMessage = `\nYou are ranking and explaining gym/fitness apparel brands for a US shopper.\n\nTASK:\n1) Answer this query: \"${prompt_text}\"\n2) Then produce STRICT JSON with this schema:\n{\n  \"answer_id\": \"<uuid-like id>\",\n  \"raw_answer\": \"<concise, neutral paragraph answer>\",\n  \"brands\": [\n    { \"brand\": \"Nike\", \"mentioned\": true/false, \"position_in_answer\": <0-based index or -1>, \"confidence\": 0.0-1.0 },\n    { \"brand\": \"Lululemon\", ... },\n    { \"brand\": \"Gymshark\", ... },\n    { \"brand\": \"Alo\", ... },\n    { \"brand\": \"Under Armour\", ... },\n    { \"brand\": \"New Balance\", ... }\n  ]\n}\n\nRULES:\n- Output ONLY the JSON, no backticks, no preamble.\n- \"position_in_answer\": index of the first occurrence of the brand name in raw_answer (or -1 if absent).\n- If a brand isn’t relevant, set mentioned=false, position_in_answer=-1, confidence<=0.35.\n- Keep raw_answer ~120–180 words, objective tone.\n`;\n\n  return {\n    json: {\n      engine: \"openai:gpt-4.1-mini\",\n      prompt_id,\n      prompt_text,\n      target_brands: TARGET_BRANDS,\n      user_message: userMessage.trim()\n    }\n  };\n});\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1024,
+        752
+      ],
+      "id": "7f35ab10-a52c-482d-b4c0-13577f4d3930",
+      "name": "Build LLM Input"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "gpt-4.1-mini",
+          "mode": "list",
+          "cachedResultName": "gpt-4.1-mini"
+        },
+        "options": {
+          "maxTokens": 700,
+          "temperature": 0.3
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        1360,
+        464
+      ],
+      "id": "86ff969c-a78b-430d-8c58-dab91693fb16",
+      "name": "OpenAI Chat Model",
+      "credentials": {
+        "openAiApi": {
+          "id": "Hd5NQstAQvUarYm0",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1s-eel-kPzgk6ldgLjeWt7p8WapTjCKAWZh2So8q88S8",
+          "mode": "list",
+          "cachedResultName": "LLM Scraping",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1s-eel-kPzgk6ldgLjeWt7p8WapTjCKAWZh2So8q88S8/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 2071146155,
+          "mode": "list",
+          "cachedResultName": "AI_Visibility_Log",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1s-eel-kPzgk6ldgLjeWt7p8WapTjCKAWZh2So8q88S8/edit#gid=2071146155"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "timestamp": "={{$json.timestamp}}",
+            "engine": "={{$json.engine}}",
+            "prompt_id": "={{$json.prompt_id}}",
+            "prompt_text": "={{$json.prompt_text}}",
+            "brand": "={{$json.brand}}",
+            "mentioned": "={{ $json.mentioned ? 'TRUE' : 'FALSE' }}",
+            "position_in_answer": "={{ $json.position_in_answer }}",
+            "confidence": "={{ Number($json.confidence ?? 0) }}",
+            "raw_answer": "={{$json.raw_answer}}",
+            "answer_id": "={{$json.answer_id}}",
+            "run_id": "={{$json.run_id}}"
+          },
+          "matchingColumns": [
+            "Visibility Log"
+          ],
+          "schema": [
+            {
+              "id": "timestamp",
+              "displayName": "timestamp",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "engine",
+              "displayName": "engine",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "prompt_id",
+              "displayName": "prompt_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "prompt_text",
+              "displayName": "prompt_text",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "brand",
+              "displayName": "brand",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "mentioned",
+              "displayName": "mentioned",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "position_in_answer",
+              "displayName": "position_in_answer",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "confidence",
+              "displayName": "confidence",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "raw_answer",
+              "displayName": "raw_answer",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "answer_id",
+              "displayName": "answer_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "run_id",
+              "displayName": "run_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        2304,
+        752
+      ],
+      "id": "79efb117-6ae9-4088-a15c-3af97f2f0590",
+      "name": "Append row in AI Visibility Log",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "FBwaBF4NdPJxzqCu",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1s-eel-kPzgk6ldgLjeWt7p8WapTjCKAWZh2So8q88S8",
+          "mode": "list",
+          "cachedResultName": "LLM Scraping",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1s-eel-kPzgk6ldgLjeWt7p8WapTjCKAWZh2So8q88S8/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 2071146155,
+          "mode": "list",
+          "cachedResultName": "AI_Visibility_Log",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1s-eel-kPzgk6ldgLjeWt7p8WapTjCKAWZh2So8q88S8/edit#gid=2071146155"
+        },
+        "filtersUI": {
+          "values": [
+            {
+              "lookupColumn": "run_id",
+              "lookupValue": "={{$node[\"Set Run ID\"].json.run_id}}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        2528,
+        752
+      ],
+      "id": "041358cc-a666-4be5-b4d2-7e1822711798",
+      "name": "AI Vis into AEO",
+      "alwaysOutputData": true,
+      "retryOnFail": false,
+      "executeOnce": true,
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "FBwaBF4NdPJxzqCu",
+          "name": "Google Sheets account"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Input: rows from AI_Visibility_Log (one per brand-mention per prompt)\nconst rows = items.map(i => i.json);\n\n// helpers\nconst num = v => (v === undefined || v === '' || v === null ? null : Number(v));\nconst clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));\n\n// normalize \"mentioned\" from bool / \"TRUE\" / \"FALSE\" / 1 / 0\nfunction normMentioned(v) {\n  if (typeof v === 'boolean') return v;\n  if (v === 1 || v === '1') return true;\n  if (v === 0 || v === '0') return false;\n  const s = String(v ?? '').trim().toUpperCase();\n  return s === 'TRUE' || s === 'YES' || s === 'Y';\n}\n\n// get a placement value (use whichever field is present)\nfunction getRank(r) {\n  const raw = r.position_in_ans ?? r.position_in_answer ?? r.rank;\n  const n = num(raw);\n  return Number.isFinite(n) ? n : null;\n}\n\n// confidence ~0..1, clamp to [0,1]\nfunction getConf(r) {\n  const c = num(r.confidence);\n  if (c == null) return null;\n  return clamp(c, 0, 1);\n}\n\nconst byBrand = new Map();\n\nfor (const r of rows) {\n  const brand = (r.brand || '').trim();\n  if (!brand) continue;\n\n  // run_id should be set for everything in this run\n  const rowRunId = r.run_id || r.answer_id || 'unknown';\n\n  // key per brand (within a run); if you *ever* mix runs in here,\n  // the run_id will still be stored inside rec\n  const key = brand;\n\n  const rec = byBrand.get(key) || {\n    run_id: rowRunId,\n    brand,\n    seenPrompts: new Set(),\n    prompts_total: 0,\n    mentions: 0,\n    sum_rank: 0,\n    sum_conf: 0,\n    evidence_low_rank: [],\n    evidence_no_mention: [],\n  };\n\n  // defensive: if previous run_id was 'unknown', upgrade it\n  if (rec.run_id === 'unknown' && rowRunId) rec.run_id = rowRunId;\n\n  const promptId = r.prompt_id ?? `p:${r.prompt_text ?? ''}`;\n  if (!rec.seenPrompts.has(promptId)) {\n    rec.prompts_total += 1;\n    rec.seenPrompts.add(promptId);\n  }\n\n  const mentioned = normMentioned(r.mentioned);\n  if (mentioned) {\n    rec.mentions += 1;\n    const rank = getRank(r);        // smaller (earlier) is better\n    const conf = getConf(r);        // 0..1 if present\n\n    if (rank != null) rec.sum_rank += rank;\n    if (conf != null) rec.sum_conf += conf;\n\n    // collect poor placement evidence (tune threshold as needed)\n    if (rank == null || rank > 400) {\n      rec.evidence_low_rank.push({\n        prompt_id: r.prompt_id,\n        prompt_text: r.prompt_text,\n        rank,\n      });\n    }\n  } else {\n    rec.evidence_no_mention.push({\n      prompt_id: r.prompt_id,\n      prompt_text: r.prompt_text,\n    });\n  }\n\n  byBrand.set(key, rec);\n}\n\n// Build per-brand scores\nconst out = [];\n\nfor (const rec of byBrand.values()) {\n  const mention_rate = rec.prompts_total ? rec.mentions / rec.prompts_total : 0;\n  const avg_rank = rec.mentions ? rec.sum_rank / rec.mentions : null;\n  const avg_conf = rec.mentions ? rec.sum_conf / rec.mentions : null;\n\n  // Normalize rank into [0..1]: assume 0..600 window; clamp. Higher is better.\n  let rank_norm = null;\n  if (avg_rank != null) {\n    const clamped = clamp(avg_rank, 0, 600);\n    rank_norm = 1 - (clamped / 600); // earlier = closer to 1\n  }\n\n  // visibility_score (0..100)\n  const coverage = mention_rate;            // 0..1\n  const conf = avg_conf ?? 0;               // 0..1\n  const place = rank_norm ?? 0;             // 0..1\n\n  const visibility_score = Math.round(\n    (0.5 * coverage + 0.3 * conf + 0.2 * place) * 100\n  );\n\n  out.push({\n    json: {\n      // for your AEO_Scores headers\n      run_id_brand: `${rec.run_id}_${rec.brand}`,\n      run_id: rec.run_id,\n      brand: rec.brand,\n      prompts_total: rec.prompts_total,\n      mentions: rec.mentions,\n      mention_rate: Number(mention_rate.toFixed(3)),\n      avg_rank: avg_rank != null ? Math.round(avg_rank) : '',\n      avg_conf: avg_conf != null ? Number(avg_conf.toFixed(2)) : '',\n      coverage_score: Math.round(coverage * 100),\n      visibility_score,\n\n      // optional debug columns (can delete later)\n      gaps_low_rank: rec.evidence_low_rank.slice(0, 10),\n      gaps_no_mention: rec.evidence_no_mention.slice(0, 10),\n    },\n  });\n}\n\nreturn out;\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2752,
+        752
+      ],
+      "id": "23dff60a-4b63-403e-90c6-54e04dcf1189",
+      "name": "Brand Level Code"
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1s-eel-kPzgk6ldgLjeWt7p8WapTjCKAWZh2So8q88S8",
+          "mode": "list",
+          "cachedResultName": "LLM Scraping",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1s-eel-kPzgk6ldgLjeWt7p8WapTjCKAWZh2So8q88S8/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 1646129251,
+          "mode": "list",
+          "cachedResultName": "AEO_Scores",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1s-eel-kPzgk6ldgLjeWt7p8WapTjCKAWZh2So8q88S8/edit#gid=1646129251"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "run_id": "={{$json.run_id}}",
+            "brand": "={{$json.brand}}",
+            "prompts_total": "={{$json.prompts_total}}",
+            "mentions": "={{$json.mentions}}",
+            "mention_rate": "={{$json.mention_rate}}",
+            "avg_rank": "={{$json.avg_rank}}",
+            "avg_conf": "={{$json.avg_conf}}",
+            "coverage_score": "={{$json.coverage_score}}",
+            "visibility_score": "={{$json.visibility_score}}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "run_id",
+              "displayName": "run_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "brand",
+              "displayName": "brand",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "prompts_total",
+              "displayName": "prompts_total",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "mentions",
+              "displayName": "mentions",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "mention_rate",
+              "displayName": "mention_rate",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "avg_rank",
+              "displayName": "avg_rank",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "avg_conf",
+              "displayName": "avg_conf",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "coverage_score",
+              "displayName": "coverage_score",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "visibility_score",
+              "displayName": "visibility_score",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        2976,
+        752
+      ],
+      "id": "b5959185-83ff-4836-a82a-9bc194c40e6b",
+      "name": "Append row in AEO Scores",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "FBwaBF4NdPJxzqCu",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1s-eel-kPzgk6ldgLjeWt7p8WapTjCKAWZh2So8q88S8",
+          "mode": "list",
+          "cachedResultName": "LLM Scraping",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1s-eel-kPzgk6ldgLjeWt7p8WapTjCKAWZh2So8q88S8/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 1646129251,
+          "mode": "list",
+          "cachedResultName": "AEO_Scores",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1s-eel-kPzgk6ldgLjeWt7p8WapTjCKAWZh2So8q88S8/edit#gid=1646129251"
+        },
+        "filtersUI": {
+          "values": [
+            {
+              "lookupColumn": "run_id",
+              "lookupValue": "={{$json.run_id}}"
+            },
+            {
+              "lookupColumn": "brand",
+              "lookupValue": "={{$json.brand}}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        3200,
+        752
+      ],
+      "id": "8a42e12b-85c6-42a8-9fd9-3ab48cc12f68",
+      "name": "AEO Scores Row",
+      "executeOnce": false,
+      "alwaysOutputData": true,
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "FBwaBF4NdPJxzqCu",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-4.1-mini"
+        },
+        "options": {
+          "maxTokens": 800,
+          "temperature": 0.7
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        3504,
+        1184
+      ],
+      "id": "ffdaa30a-26c6-40db-bdbb-6f231f6303d8",
+      "name": "OpenAI Chat Model1",
+      "credentials": {
+        "openAiApi": {
+          "id": "Hd5NQstAQvUarYm0",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=You are an AI Optimization (AEO) specialist for fitness apparel brands.\n\nDATA (single brand row):\n- Brand: {{$json.brand}}\n- Prompts total: {{$json.prompts_total}}\n- Mentions: {{$json.mentions}}\n- Mention rate: {{$json.mention_rate}}\n- Avg rank: {{$json.avg_rank}}\n- Avg confidence: {{$json.avg_conf}}\n- Coverage score: {{$json.coverage_score}}\n- Visibility score: {{$json.visibility_score}}\n- Run ID: {{$json.run_id}}\n\nOBJECTIVE\nGiven the metrics above, produce 1–3 concrete optimization recommendations that a marketing/SEO owner can take in the next sprint.\n\nFIELDS you must return (inside each recommendation object):\n- \"run_id\": copy from input ({{$json.run_id}})\n- \"brand\": copy from input ({{$json.brand}})\n- \"priority\": one of \"P1\", \"P2\", \"P3\", \"P4\"\n  PRIORITY RULE (start here, then adjust a level if avg_rank or confidence clearly make things worse/better):\n    - visibility_score <= 85 → P4 (highest)\n    - 86–92 → P3\n    - >92 → P2 (lowest)\n  *If visibility_score is missing, choose by avg_rank (≤60 → P3/P4, 61–120 → P3, >120 → P4)\n  *If avg_conf < 0.80 and issue is content/quality, bump priority up one level (e.g., P3→P4).\n- \"issue_type\": short label like \"Poor ranking\", \"Thin content\", \"Brand not mentioned\", \"Weak SERP coverage\", etc.\n- \"suggested_fix\": 1–2 sentences with a specific action (what to change, where, and how).\n- \"impact_est\": integer in {10, 20, 30} meaning low/medium/high estimated impact.\n  GUIDANCE: rank/visibility problems on high-intent queries → 30; moderate issues → 20; minor wins → 10.\n- \"evidence\": one sentence, cite the metrics (e.g., \"Avg rank 122 with full coverage suggests ranking limits visibility\").\n- \"example_copy\": 1 sentence of on-brand marketing copy for this brand (US English).\n- \"tracking_url\": empty string \"\" (we’ll fill it in later).\n\nSTYLE\n- Be concise, specific, and brand-aware (but do not invent facts beyond the given metrics).\n- Use US English.\n- No markdown, no commentary.\n\nABSOLUTE OUTPUT RULES\n- Return ONLY strict JSON that matches exactly this schema:\n{\n  \"recs\": [\n    {\n      \"run_id\": \"string\",\n      \"brand\": \"string\",\n      \"priority\": \"P1\" | \"P2\" | \"P3\" | \"P4\",\n      \"issue_type\": \"string\",\n      \"suggested_fix\": \"string\",\n      \"impact_est\": 10 | 20 | 30,\n      \"evidence\": \"string\",\n      \"example_copy\": \"string\",\n      \"tracking_url\": \"string\"\n    }\n  ]\n}\n- All keys & string values MUST use double quotes.\n- No trailing commas. No code fences. No extra wrapper fields.\n- If any text value is unknown, use \"\" (empty string). \"impact_est\" MUST be an integer.\n-Output only a JSON object that matches the schema. No code fences, no markdown, no backticks, no commentary.\n\nRETURN JSON ONLY. For example, structurally like this (you must fill the fields):\n{\n  \"recs\": [\n    {\n      \"run_id\": \"{{$json.run_id}}\",\n      \"brand\": \"{{$json.brand}}\",\n      \"priority\": \"P3\",\n      \"issue_type\": \"Poor ranking\",\n      \"suggested_fix\": \"…your concrete action here…\",\n      \"impact_est\": 30,\n      \"evidence\": \"…cite visibility/rank/confidence here…\",\n      \"example_copy\": \"…one sentence of ad/landing copy…\",\n      \"tracking_url\": \"\"\n    }\n  ]\n}\n",
+        "hasOutputParser": true,
+        "batching": {
+          "batchSize": 7
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.7,
+      "position": [
+        3424,
+        752
+      ],
+      "id": "8f5a15e2-be1a-471a-b8d4-a23309259763",
+      "name": "AEO Reco's"
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1s-eel-kPzgk6ldgLjeWt7p8WapTjCKAWZh2So8q88S8",
+          "mode": "list",
+          "cachedResultName": "LLM Scraping",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1s-eel-kPzgk6ldgLjeWt7p8WapTjCKAWZh2So8q88S8/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 320251680,
+          "mode": "list",
+          "cachedResultName": "AEO_Recommendations",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1s-eel-kPzgk6ldgLjeWt7p8WapTjCKAWZh2So8q88S8/edit#gid=320251680"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "run_id": "={{$json.run_id}}",
+            "brand": "={{$json.brand}}",
+            "priority": "={{Number($json.priority ?? 3)}}",
+            "issue_type": "={{$json.issue_type}}",
+            "suggested_fix": "={{$json.suggested_fix}}",
+            "impact_est": "={{Number($json.impact_est ?? 3)}}",
+            "evidence": "={{$json.evidence}}",
+            "example_copy": "={{$json.example_copy}}",
+            "tracking_url": "={{$json.tracking_url}}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "run_id",
+              "displayName": "run_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "brand",
+              "displayName": "brand",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "priority",
+              "displayName": "priority",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "issue_type",
+              "displayName": "issue_type",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "suggested_fix",
+              "displayName": "suggested_fix",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "impact_est",
+              "displayName": "impact_est",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "evidence",
+              "displayName": "evidence",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "example_copy",
+              "displayName": "example_copy",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "tracking_url",
+              "displayName": "tracking_url",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        4096,
+        752
+      ],
+      "id": "7854890c-9e90-4049-8b56-11108b3c98f8",
+      "name": "AEO Reco",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "FBwaBF4NdPJxzqCu",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Flatten all recs from every incoming item and output rows for the sheet\n\nfunction normPriority(p){ return (p || \"P3\").trim(); }\nfunction clampInt(v, lo=0, hi=100){\n  const n = Number(v ?? 0);\n  return Math.min(hi, Math.max(lo, Math.round(n)));\n}\n\nconst out = [];\n\nfor (const it of items) {\n  // Parser may put data under .response.recs or .output.recs depending on the tool\n  const recs = it.json?.response?.recs ?? it.json?.output?.recs ?? [];\n  for (const r of recs) {\n    const brand = String(r.brand ?? \"\").trim();\n    const runId = String(r.run_id ?? \"\").trim();\n\n    // Fallback tracking link if missing: Google query for brand + topic\n    const fallbackUrl = brand\n      ? `https://www.google.com/search?q=${encodeURIComponent(brand + \" site:instagram.com OR site:tiktok.com OR site:youtube.com\")}`\n      : \"\";\n\n    out.push({\n      json: {\n        run_id: runId,\n        brand,\n        priority: normPriority(r.priority),\n        issue_type: String(r.issue_type ?? \"Other\").trim(),\n        suggested_fix: String(r.suggested_fix ?? \"\").trim(),\n        impact_est: clampInt(r.impact_est, 0, 100),\n        evidence: String(r.evidence ?? \"\").trim(),\n        example_copy: String(r.example_copy ?? \"\").trim(),\n        tracking_url: String((r.tracking_url ?? \"\").trim() || fallbackUrl),\n      }\n    });\n  }\n}\n\nreturn out;\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3872,
+        752
+      ],
+      "id": "31db459d-3859-4af8-8336-3deb9fb2518b",
+      "name": "Suggestion Code",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "schemaType": "manual",
+        "inputSchema": "={\n  \"$schema\": \"http://json-schema.org/draft-07/schema#\",\n  \"title\": \"AEORecommendationList\",\n  \"type\": \"object\",\n  \"required\": [\"recs\"],\n  \"additionalProperties\": false,\n  \"properties\": {\n    \"recs\": {\n      \"type\": \"array\",\n      \"minItems\": 1,\n      \"maxItems\": 3,\n      \"items\": {\n        \"type\": \"object\",\n        \"additionalProperties\": false,\n        \"required\": [\n          \"run_id\",\n          \"brand\",\n          \"priority\",\n          \"issue_type\",\n          \"suggested_fix\",\n          \"impact_est\",\n          \"evidence\",\n          \"example_copy\",\n          \"tracking_url\"\n        ],\n        \"properties\": {\n          \"run_id\": { \"type\": \"string\" },\n          \"brand\": { \"type\": \"string\" },\n          \"priority\": { \"type\": \"string\", \"enum\": [\"P1\", \"P2\", \"P3\", \"P4\"] },\n          \"issue_type\": { \"type\": \"string\" },\n          \"suggested_fix\": { \"type\": \"string\" },\n          \"impact_est\": { \"type\": \"integer\", \"enum\": [10, 20, 30] },\n          \"evidence\": { \"type\": \"string\" },\n          \"example_copy\": { \"type\": \"string\" },\n          \"tracking_url\": { \"type\": \"string\" }\n        }\n      }\n    }\n  }\n}\n",
+        "autoFix": true
+      },
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.3,
+      "position": [
+        3536,
+        976
+      ],
+      "id": "78268d75-f24d-42ab-9584-87c23440947d",
+      "name": "Structured Output Parser1"
+    },
+    {
+      "parameters": {
+        "mode": "raw",
+        "jsonOutput": "={\n  \"run_id\": \"{{ 'run_' + $now.toFormat('yyyyLLddHHmmss') + '_' + Math.floor(Math.random()*10000) }}\",\n  \"timestamp\": \"{{ $now.toISO() }}\"\n}\n",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        384,
+        752
+      ],
+      "id": "354b0d9d-f7e0-4ada-8597-e55839f9f17c",
+      "name": "Set Run ID"
+    },
+    {
+      "parameters": {
+        "mode": "raw",
+        "jsonOutput": "={\n  \"run_id\": \"{{$item(0).$node['Set Run ID'].json.run_id}}\",\n  \"timestamp\": \"{{$item(0).$node['Set Run ID'].json.timestamp}}\"\n}\n",
+        "includeOtherFields": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        832,
+        752
+      ],
+      "id": "0278b694-3342-4646-ab80-ec55d6d92f90",
+      "name": "Attach Run ID"
+    },
+    {
+      "parameters": {
+        "content": "This area is scrapping the LLM's after grabbing the sample questions.",
+        "height": 80,
+        "width": 416
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        1200,
+        64
+      ],
+      "id": "86a10a1e-c756-466f-b866-65377c3721e6",
+      "name": "Sticky Note"
+    },
+    {
+      "parameters": {
+        "content": "Temperature gauge with the model/brains.",
+        "height": 80,
+        "width": 288
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        3664,
+        1232
+      ],
+      "id": "21d62f83-b939-46af-92c4-f46ba27b8e36",
+      "name": "Sticky Note2"
+    },
+    {
+      "parameters": {
+        "content": "LLM Scrape Workflow",
+        "height": 80,
+        "width": 576
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -16,
+        576
+      ],
+      "id": "3c3f8d07-373b-4223-8914-70ad12af03d7",
+      "name": "Sticky Note3"
+    },
+    {
+      "parameters": {
+        "options": {
+          "maxOutputTokens": 4000,
+          "temperature": 0.4
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        1456,
+        864
+      ],
+      "id": "c911e47e-5344-4b24-bd6a-7db8e4883ef4",
+      "name": "Google Gemini Chat Model",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "CjWq56BbHEurdMDr",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "claude-sonnet-4-20250514",
+          "cachedResultName": "Claude 4 Sonnet"
+        },
+        "options": {
+          "maxTokensToSample": 4096
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatAnthropic",
+      "typeVersion": 1.3,
+      "position": [
+        1360,
+        1376
+      ],
+      "id": "c1825449-67eb-4d50-9dad-4c1d41749ef3",
+      "name": "Anthropic Chat Model",
+      "credentials": {
+        "anthropicApi": {
+          "id": "ECEQqW6jzyIslkgc",
+          "name": "Anthropic account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Mode: Run Once for All Items\n\nconst items = $input.all();\nconst out = [];\n\nfunction norm(s) {\n  return String(s || \"\").trim().toLowerCase();\n}\n\nfor (const item of items) {\n  const row = item.json;\n\n  const engine      = row.engine;\n  const prompt_id   = row.prompt_id;\n  const prompt_text = row.prompt_text;\n  const run_id      = row.run_id;\n\n  // Parse list of target brands from the string\n  let targetBrands = [];\n  try {\n    targetBrands = JSON.parse(row.target_brands || \"[]\");\n  } catch (e) {\n    targetBrands = [];\n  }\n\n  // ---- parse the model’s structured output from raw_answer ----\n  let parsed = {};\n  let parseOk = false;\n\n  try {\n    // handle both \"raw_answer\" and \"raw_answer \" (with trailing space)\n    const blob =\n      (row.raw_answer ?? row[\"raw_answer \"] ?? \"\").trim();\n\n    if (blob && blob.startsWith(\"{\")) {\n      parsed = JSON.parse(blob);\n      parseOk = true;\n    } else {\n      parsed = {};\n    }\n  } catch (e) {\n    parsed = {};\n    parseOk = false;\n  }\n\n  const answer_id  = parsed.answer_id ?? null;\n  const raw_answer = parsed.raw_answer ?? \"\";\n  const brandsInfo = Array.isArray(parsed.brands) ? parsed.brands : [];\n\n  // brand lookup map\n  const brandMap = {};\n  for (const b of brandsInfo) {\n    if (!b || !b.brand) continue;\n    brandMap[norm(b.brand)] = b;\n  }\n\n  // one row per target brand\n  for (const brandName of targetBrands) {\n    const key   = norm(brandName);\n    const match = brandMap[key];\n\n    out.push({\n      json: {\n        timestamp: new Date().toISOString(),\n        engine,\n        prompt_id,\n        prompt_text,\n        brand: brandName,\n        mentioned:          match ? !!match.mentioned : false,\n        position_in_answer: match ? (match.position_in_answer ?? -1) : -1,\n        confidence:         match ? (match.confidence ?? 0) : 0,\n        raw_answer,\n        answer_id,\n        run_id,\n        // debug flag if you want it\n        // parse_ok: parseOk,\n      },\n    });\n  }\n}\n\nreturn out;\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2080,
+        752
+      ],
+      "id": "2b96e4d6-d32a-4a6f-ba22-9d680046efc7",
+      "name": "Models Code",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Question: {{ $json.prompt_text }}\nTarget brands: {{ $json.target_brands }}\n",
+        "messages": {
+          "messageValues": [
+            {
+              "message": "=You are an AI that must ALWAYS return structured JSON.\n\nAfter answering the question, produce a JSON object in the following format:\n\n{\n  \"answer_id\": \"<unique ID>\",\n  \"raw_answer\": \"<your full paragraph answer>\",\n  \"brands\": [\n    {\n      \"brand\": \"Nike\",\n      \"mentioned\": true/false,\n      \"position_in_answer\": <character index of first mention, or -1>,\n      \"confidence\": <a value from 0.0 to 1.0>\n    }\n  ]\n}\n\nRequirements:\n- \"raw_answer\" must contain the full natural-language answer.\n- The \"brands\" array must include an entry for EVERY brand I list below.\n- Do NOT include any text outside of the JSON.\n- Do NOT escape the JSON or wrap it in markdown.\n"
+            }
+          ]
+        },
+        "batching": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.7,
+      "position": [
+        1360,
+        624
+      ],
+      "id": "730a36a3-60ee-4106-aa96-e87a60e7191f",
+      "name": "Gemini Chain"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "2aa05e1f-2eef-426f-9b8a-68d164c4b334",
+              "name": "engine",
+              "value": "anthropic:claude-4-sonnet",
+              "type": "string"
+            },
+            {
+              "id": "1a57ff62-f9ae-48ef-ba80-13b4e254323e",
+              "name": "run_id",
+              "value": "={{ $items(\"Set Run ID\")[0].json.run_id }}",
+              "type": "string"
+            },
+            {
+              "id": "9fdd8a57-90b3-44d3-90f4-e007915ea1f9",
+              "name": "prompt_id",
+              "value": "={{$items(\"Build LLM Input\")[$itemIndex].json.prompt_id}}",
+              "type": "string"
+            },
+            {
+              "id": "28ea5921-8fab-4877-9bb5-def31d1013f5",
+              "name": "prompt_text",
+              "value": "={{$items(\"Build LLM Input\")[$itemIndex].json.prompt_text}}",
+              "type": "string"
+            },
+            {
+              "id": "319a634c-e774-4976-8cfc-a95f3382e6ca",
+              "name": "target_brands",
+              "value": "={{ JSON.stringify($items(\"Build LLM Input\")[$itemIndex].json.target_brands) }}",
+              "type": "string"
+            },
+            {
+              "id": "d6135206-1d2d-4d16-affa-9b0f28340d87",
+              "name": "raw_answer ",
+              "value": "={{$json.text}}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1632,
+        1152
+      ],
+      "id": "fd1f7976-db23-414d-8f81-346c12905a6c",
+      "name": "Claude Set"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "2aa05e1f-2eef-426f-9b8a-68d164c4b334",
+              "name": "engine",
+              "value": "google:gemini-2.5-flash",
+              "type": "string"
+            },
+            {
+              "id": "f9e18823-c6ef-4a8a-a8fb-3f97b7d14647",
+              "name": "run_id",
+              "value": "={{ $items(\"Set Run ID\")[0].json.run_id }}",
+              "type": "string"
+            },
+            {
+              "id": "fc7b9f76-6f04-4a0d-a3ff-bd7d630b9a31",
+              "name": "prompt_id",
+              "value": "={{$items(\"Build LLM Input\")[$itemIndex].json.prompt_id}}",
+              "type": "string"
+            },
+            {
+              "id": "318260b2-9de2-495f-ad4c-2158d20dad63",
+              "name": "prompt_text",
+              "value": "={{$items(\"Build LLM Input\")[$itemIndex].json.prompt_text}}",
+              "type": "string"
+            },
+            {
+              "id": "8b0a2fb7-d325-4821-a3d5-2155a3c6e59e",
+              "name": "target_brands",
+              "value": "={{ JSON.stringify($items(\"Build LLM Input\")[$itemIndex].json.target_brands) }}",
+              "type": "string"
+            },
+            {
+              "id": "8f2fa676-20ca-430b-8915-2e2e90988594",
+              "name": "raw_answer ",
+              "value": "={{$json.text}}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1632,
+        752
+      ],
+      "id": "10d2a4b4-0e35-4413-b41e-129f1572327e",
+      "name": "Gemini Set"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "2aa05e1f-2eef-426f-9b8a-68d164c4b334",
+              "name": "engine",
+              "value": "openai:gpt-4.1-mini",
+              "type": "string"
+            },
+            {
+              "id": "8a34a955-c0e0-4620-b242-17c245a62c23",
+              "name": "run_id",
+              "value": "={{ $items(\"Set Run ID\")[0].json.run_id }}",
+              "type": "string"
+            },
+            {
+              "id": "323c303a-a0ce-45c7-b883-a0b1fa3f72dd",
+              "name": "prompt_id",
+              "value": "={{$items(\"Build LLM Input\")[$itemIndex].json.prompt_id}}",
+              "type": "string"
+            },
+            {
+              "id": "22360210-ab12-403d-85be-7e2f2ae28f61",
+              "name": "prompt_text",
+              "value": "={{$items(\"Build LLM Input\")[$itemIndex].json.prompt_text}}",
+              "type": "string"
+            },
+            {
+              "id": "5614394a-c809-4bfb-b7db-842fce29ce5d",
+              "name": "target_brands",
+              "value": "={{ JSON.stringify($items(\"Build LLM Input\")[$itemIndex].json.target_brands) }}",
+              "type": "string"
+            },
+            {
+              "id": "961034c1-4f0a-4217-a525-be1f97027fbc",
+              "name": "raw_answer ",
+              "value": "={{$json.text}}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1632,
+        352
+      ],
+      "id": "894351f9-cac1-4e0a-bb91-1e36ad20c5af",
+      "name": "GPT Set"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Question: {{ $json.prompt_text }}\nTarget brands: {{ $json.target_brands }}\n",
+        "messages": {
+          "messageValues": [
+            {
+              "message": "You are an AI that must ALWAYS return structured JSON.  After answering the question, produce a JSON object in the following format:  {   \"answer_id\": \"<unique ID>\",   \"raw_answer\": \"<your full paragraph answer>\",   \"brands\": [     {       \"brand\": \"Nike\",       \"mentioned\": true/false,       \"position_in_answer\": <character index of first mention, or -1>,       \"confidence\": <a value from 0.0 to 1.0>     }   ] }  Requirements: - \"raw_answer\" must contain the full natural-language answer. - The \"brands\" array must include an entry for EVERY brand I list below. - Do NOT include any text outside of the JSON. - Do NOT escape the JSON or wrap it in markdown."
+            }
+          ]
+        },
+        "batching": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.7,
+      "position": [
+        1280,
+        1152
+      ],
+      "id": "5ab40635-550d-4e8e-a583-e4f913927cd3",
+      "name": "Claude Chain"
+    },
+    {
+      "parameters": {
+        "numberInputs": 3
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        1856,
+        736
+      ],
+      "id": "97952bac-1a67-45b3-8ee5-954eeb0f4f8e",
+      "name": "Merge"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Question: {{ $json.prompt_text }}\nTarget brands: {{ $json.target_brands }}\n",
+        "messages": {
+          "messageValues": [
+            {
+              "message": "You are an AI that must ALWAYS return structured JSON.  After answering the question, produce a JSON object in the following format:  {   \"answer_id\": \"<unique ID>\",   \"raw_answer\": \"<your full paragraph answer>\",   \"brands\": [     {       \"brand\": \"Nike\",       \"mentioned\": true/false,       \"position_in_answer\": <character index of first mention, or -1>,       \"confidence\": <a value from 0.0 to 1.0>     }   ] }  Requirements: - \"raw_answer\" must contain the full natural-language answer. - The \"brands\" array must include an entry for EVERY brand I list below. - Do NOT include any text outside of the JSON. - Do NOT escape the JSON or wrap it in markdown."
+            }
+          ]
+        },
+        "batching": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.7,
+      "position": [
+        1280,
+        240
+      ],
+      "id": "8a2136e5-3e51-463c-8fdb-7dc38e6caa38",
+      "name": "Chat GPT Chain"
+    },
+    {
+      "parameters": {
+        "content": "This will sometimes not parse all items due to formatting etc. It will be good to check how the items differ. (ex: 13 items into parser and 7 out)",
+        "height": 112
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        3808,
+        1024
+      ],
+      "id": "47c82819-44ab-42f2-9f85-492e732fbae3",
+      "name": "Sticky Note4"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Input: rows from AI_Visibility_Log (one per brand/prompt/engine row)\nconst rows = items.map(i => i.json);\n\n// helpers\nconst num = v => (v === undefined || v === '' || v === null ? null : Number(v));\nconst clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));\n\n// normalize \"mentioned\" from bool / \"TRUE\" / \"FALSE\" / 1 / 0\nfunction normMentioned(v) {\n  if (typeof v === 'boolean') return v;\n  if (v === 1 || v === '1') return true;\n  if (v === 0 || v === '0') return false;\n  const s = String(v ?? '').trim().toUpperCase();\n  return s === 'TRUE' || s === 'YES' || s === 'Y';\n}\n\n// get a placement value (use whichever field is present)\nfunction getRank(r) {\n  const raw = r.position_in_ans ?? r.position_in_answer ?? r.rank;\n  const n = num(raw);\n  return Number.isFinite(n) ? n : null;\n}\n\n// confidence ~0..1, clamp to [0,1]\nfunction getConf(r) {\n  const c = num(r.confidence);\n  if (c == null) return null;\n  return clamp(c, 0, 1);\n}\n\n// --- group by (engine, brand) instead of just brand ---\nconst byEngineBrand = new Map();\n\nfor (const r of rows) {\n  const brand  = (r.brand  || '').trim();\n  const engine = (r.engine || '').trim();\n  if (!brand || !engine) continue;\n\n  const rowRunId = r.run_id || r.answer_id || 'unknown';\n  const key = `${engine}|||${brand}`;\n\n  const rec = byEngineBrand.get(key) || {\n    run_id: rowRunId,\n    engine,\n    brand,\n    seenPrompts: new Set(),\n    prompts_total: 0,\n    mentions: 0,\n    sum_rank: 0,\n    sum_conf: 0,\n  };\n\n  if (rec.run_id === 'unknown' && rowRunId) rec.run_id = rowRunId;\n\n  const promptId = r.prompt_id ?? `p:${r.prompt_text ?? ''}`;\n  if (!rec.seenPrompts.has(promptId)) {\n    rec.prompts_total += 1;\n    rec.seenPrompts.add(promptId);\n  }\n\n  const mentioned = normMentioned(r.mentioned);\n  if (mentioned) {\n    rec.mentions += 1;\n    const rank = getRank(r);\n    const conf = getConf(r);\n\n    if (rank != null) rec.sum_rank += rank;\n    if (conf != null) rec.sum_conf += conf;\n  }\n\n  byEngineBrand.set(key, rec);\n}\n\n// Build per-(engine, brand) scores\nconst out = [];\n\nfor (const rec of byEngineBrand.values()) {\n  const mention_rate = rec.prompts_total ? rec.mentions / rec.prompts_total : 0;\n  const avg_rank = rec.mentions ? rec.sum_rank / rec.mentions : null;\n  const avg_conf = rec.mentions ? rec.sum_conf / rec.mentions : null;\n\n  // Normalize rank into [0..1]: assume 0..600 window; higher is better\n  let rank_norm = null;\n  if (avg_rank != null) {\n    const clamped = clamp(avg_rank, 0, 600);\n    rank_norm = 1 - (clamped / 600);\n  }\n\n  const coverage = mention_rate;         // 0..1\n  const conf = avg_conf ?? 0;            // 0..1\n  const place = rank_norm ?? 0;          // 0..1\n\n  const visibility_score = Math.round(\n    (0.5 * coverage + 0.3 * conf + 0.2 * place) * 100\n  );\n\n  out.push({\n    json: {\n      run_id: rec.run_id,\n      engine: rec.engine,\n      brand: rec.brand,\n      prompts_total: rec.prompts_total,\n      mentions: rec.mentions,\n      mention_rate: Number(mention_rate.toFixed(3)),\n      avg_rank: avg_rank != null ? Math.round(avg_rank) : '',\n      avg_conf: avg_conf != null ? Number(avg_conf.toFixed(2)) : '',\n      coverage_score: Math.round(coverage * 100),\n      visibility_score,\n    }\n  });\n}\n\nreturn out;\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2752,
+        928
+      ],
+      "id": "64569bf4-ff6b-44ed-a546-e3ccebdb4d94",
+      "name": "Brand Level by Model"
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1s-eel-kPzgk6ldgLjeWt7p8WapTjCKAWZh2So8q88S8",
+          "mode": "list",
+          "cachedResultName": "LLM Scraping",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1s-eel-kPzgk6ldgLjeWt7p8WapTjCKAWZh2So8q88S8/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 1411376757,
+          "mode": "list",
+          "cachedResultName": "AEO_Scores_By_Model",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1s-eel-kPzgk6ldgLjeWt7p8WapTjCKAWZh2So8q88S8/edit#gid=1411376757"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "run_id": "={{$json.run_id}}",
+            "brand": "={{$json.brand}}",
+            "prompts_total": "={{$json.prompts_total}}",
+            "mentions": "={{$json.mentions}}",
+            "engine": "={{$json.engine}}",
+            "mention_rate": "={{$json.mention_rate}}",
+            "avg_rank": "={{$json.avg_rank}}",
+            "coverage_score": "={{$json.coverage_score}}",
+            "visibility_score": "={{$json.visibility_score}}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "run_id",
+              "displayName": "run_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "engine",
+              "displayName": "engine",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "brand",
+              "displayName": "brand",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "prompts_total",
+              "displayName": "prompts_total",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "mentions",
+              "displayName": "mentions",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "mention_rate",
+              "displayName": "mention_rate",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "avg_rank",
+              "displayName": "avg_rank",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "coverage_score",
+              "displayName": "coverage_score",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "visibility_score",
+              "displayName": "visibility_score",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        2576,
+        1184
+      ],
+      "id": "f53dafae-ca90-45fb-b9e4-a075fbb1b06a",
+      "name": "Append row in sheet",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "FBwaBF4NdPJxzqCu",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Brand × Model Comparison Code\n// Input: rows from AEO_Scores_By_Model Row node\n// One row per (run_id, engine, brand)\n\nconst rows = items.map(i => i.json);\n\n// Group rows by brand and collect model scores\nconst grouped = {};\n\nfor (const r of rows) {\n  const brand = (r.brand || \"\").trim();\n  if (!brand) continue;\n\n  // Use visibility_score as the main metric (fallback to 0)\n  const score = Number(r.visibility_score ?? 0) || 0;\n\n  // Make engine safe and normalize for matching\n  const rawEngine = r.engine || \"\";\n  const modelStr = String(rawEngine).toLowerCase();\n\n  if (!grouped[brand]) {\n    grouped[brand] = {\n      brand,\n      models: {},          // will store { gpt: {...}, claude: {...}, gemini: {...} }\n      run_id: r.run_id || \"\"\n    };\n  }\n\n  const brandRec = grouped[brand];\n\n  // Decide which bucket this engine belongs to\n  let bucket = null;\n  if (modelStr.includes(\"gpt\")) {\n    bucket = \"gpt\";\n  } else if (modelStr.includes(\"claude\")) {\n    bucket = \"claude\";\n  } else if (modelStr.includes(\"gemini\")) {\n    bucket = \"gemini\";\n  } else {\n    // Unknown model type – skip for now\n    continue;\n  }\n\n  // If we ever had multiple rows per (brand, model), keep the best score\n  const existing = brandRec.models[bucket];\n  if (!existing || score > existing.score) {\n    brandRec.models[bucket] = {\n      model: rawEngine,\n      score\n    };\n  }\n}\n\n// Build one output row per brand\nconst out = [];\n\nfor (const brandRec of Object.values(grouped)) {\n  const m = brandRec.models;\n\n  const gptScore    = m.gpt    ? m.gpt.score    : null;\n  const claudeScore = m.claude ? m.claude.score : null;\n  const geminiScore = m.gemini ? m.gemini.score : null;\n\n  const modelScores = [];\n  if (gptScore    != null) modelScores.push({ name: m.gpt.model,    score: gptScore });\n  if (claudeScore != null) modelScores.push({ name: m.claude.model, score: claudeScore });\n  if (geminiScore != null) modelScores.push({ name: m.gemini.model, score: geminiScore });\n\n  // Compute averages & variance\n  let avgVis = 0;\n  let variance = 0;\n  if (modelScores.length > 0) {\n    const sum = modelScores.reduce((acc, s) => acc + s.score, 0);\n    avgVis = sum / modelScores.length;\n\n    if (modelScores.length > 1) {\n      const mean = avgVis;\n      const varSum = modelScores.reduce((acc, s) => {\n        const diff = s.score - mean;\n        return acc + diff * diff;\n      }, 0);\n      variance = varSum / modelScores.length;\n    }\n  }\n\n  // Best / worst model & spread\n  let bestModel = \"\";\n  let worstModel = \"\";\n  let spread = 0;\n\n  if (modelScores.length > 0) {\n    let best = modelScores[0];\n    let worst = modelScores[0];\n\n    for (const s of modelScores.slice(1)) {\n      if (s.score > best.score) best = s;\n      if (s.score < worst.score) worst = s;\n    }\n\n    bestModel = best.name;\n    worstModel = worst.name;\n    spread = best.score - worst.score;\n  }\n\n  out.push({\n    json: {\n      brand: brandRec.brand,\n      model_gpt:    m.gpt    ? m.gpt.model    : \"\",\n      score_gpt:    gptScore    != null ? gptScore    : \"\",\n      model_claude: m.claude ? m.claude.model : \"\",\n      score_claude: claudeScore != null ? claudeScore : \"\",\n      model_gemini: m.gemini ? m.gemini.model : \"\",\n      score_gemini: geminiScore != null ? geminiScore : \"\",\n      best_model: bestModel,\n      worst_model: worstModel,\n      spread,\n      avg_visibility: Number(avgVis.toFixed(1)),\n      variance: Number(variance.toFixed(1)),\n      run_id: brandRec.run_id\n    }\n  });\n}\n\nreturn out;\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2784,
+        1184
+      ],
+      "id": "6f6c751f-024a-4ccd-9e30-1a58b663729d",
+      "name": "Brand × Model Comparison Code"
+    },
+    {
+      "parameters": {
+        "content": "This is the Brand x Model Comparison spin off.",
+        "height": 80,
+        "width": 432
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        2288,
+        1504
+      ],
+      "id": "8367c532-f020-4cd7-a04a-a2b1366128bb",
+      "name": "Sticky Note1"
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1s-eel-kPzgk6ldgLjeWt7p8WapTjCKAWZh2So8q88S8",
+          "mode": "list",
+          "cachedResultName": "LLM Scraping",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1s-eel-kPzgk6ldgLjeWt7p8WapTjCKAWZh2So8q88S8/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 1956760185,
+          "mode": "list",
+          "cachedResultName": "AEO_Brand_Model_Comparison",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1s-eel-kPzgk6ldgLjeWt7p8WapTjCKAWZh2So8q88S8/edit#gid=1956760185"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "brand": "={{ $json.brand }}",
+            "model_gpt": "={{ $json.model_gpt }}",
+            "score_gpt": "={{ $json.score_gpt }}",
+            "model_claude": "={{ $json.model_claude }}",
+            "score_claude": "={{ $json.score_claude }}",
+            "model_gemini": "={{ $json.model_gemini }}",
+            "score_gemini": "={{ $json.score_gemini }}",
+            "best_model": "={{ $json.best_model }}",
+            "worst_model": "={{ $json.worst_model }}",
+            "avg_visibility": "={{ $json.avg_visibility}}",
+            "variance": "={{ $json.variance}}",
+            "run_id": "={{ $json.run_id}}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "brand",
+              "displayName": "brand",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "model_gpt",
+              "displayName": "model_gpt",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "score_gpt",
+              "displayName": "score_gpt",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "model_claude",
+              "displayName": "model_claude",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "score_claude",
+              "displayName": "score_claude",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "model_gemini",
+              "displayName": "model_gemini",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "score_gemini",
+              "displayName": "score_gemini",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "best_model",
+              "displayName": "best_model",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "worst_model",
+              "displayName": "worst_model",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "avg_visibility",
+              "displayName": "avg_visibility",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "variance",
+              "displayName": "variance",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "run_id",
+              "displayName": "run_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        2992,
+        1184
+      ],
+      "id": "8e8397a3-cef3-4e91-80a5-89a4615b460a",
+      "name": "AEO_Brand_Model_Comparison",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "FBwaBF4NdPJxzqCu",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Input: rows from AI_Visibility_Log (one per brand per prompt per model)\nconst rows = items.map(i => i.json);\n\n// helpers\nconst num = v => (v === undefined || v === '' || v === null ? null : Number(v));\nconst clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));\n\n// normalize \"mentioned\"\nfunction normMentioned(v) {\n  if (typeof v === 'boolean') return v;\n  if (v === 1 || v === '1') return true;\n  if (v === 0 || v === '0') return false;\n  const s = String(v ?? '').trim().toUpperCase();\n  return s === 'TRUE' || s === 'YES' || s === 'Y';\n}\n\n// pick a rank field\nfunction getRank(r) {\n  const raw = r.position_in_ans ?? r.position_in_answer ?? r.rank;\n  const n = num(raw);\n  return Number.isFinite(n) ? n : null;\n}\n\nfunction getConf(r) {\n  const c = num(r.confidence);\n  if (c == null) return null;\n  return clamp(c, 0, 1);\n}\n\n// group by prompt + model\nconst byPromptModel = new Map();\n\nfor (const r of rows) {\n  const promptId = String(r.prompt_id ?? '').trim();\n  const promptText = String(r.prompt_text ?? '').trim();\n  const modelRaw = String(r.engine ?? '').trim();\n  const runId = String(r.run_id ?? r.answer_id ?? 'unknown');\n\n  if (!promptId && !promptText) continue;\n\n  // normalize model family name a bit\n  let model = modelRaw.toLowerCase();\n  if (model.includes('gpt')) model = 'gpt';\n  else if (model.includes('claude')) model = 'claude';\n  else if (model.includes('gemini')) model = 'gemini';\n\n  const brand = String(r.brand ?? '').trim();\n  const key = `${runId}||${promptId}||${model}`;\n\n  let rec = byPromptModel.get(key);\n  if (!rec) {\n    rec = {\n      run_id: runId,\n      prompt_id: promptId,\n      prompt_text: promptText,\n      model,\n      brands_seen: new Set(),\n      brands_with_mention: new Set(),\n      sum_rank: 0,\n      sum_conf: 0,\n    };\n    byPromptModel.set(key, rec);\n  }\n\n  if (brand) rec.brands_seen.add(brand);\n\n  const mentioned = normMentioned(r.mentioned);\n  if (mentioned) {\n    rec.brands_with_mention.add(brand || `brand-${rec.brands_with_mention.size}`);\n    const rank = getRank(r);\n    const conf = getConf(r);\n\n    if (rank != null) rec.sum_rank += rank;\n    if (conf != null) rec.sum_conf += conf;\n  }\n}\n\n// build output rows\nconst out = [];\n\nfor (const rec of byPromptModel.values()) {\n  const brands_total = rec.brands_seen.size || rec.brands_with_mention.size || 0;\n  const mentions = rec.brands_with_mention.size || 0;\n\n  const mention_rate = brands_total ? mentions / brands_total : 0;\n  const avg_rank = mentions ? rec.sum_rank / mentions : null;\n  const avg_conf = mentions ? rec.sum_conf / mentions : null;\n\n  out.push({\n    json: {\n      run_id: rec.run_id,\n      prompt_id: rec.prompt_id,\n      prompt_text: rec.prompt_text,\n      model: rec.model,\n      brands_total,\n      mentions,\n      mention_rate: Number(mention_rate.toFixed(3)),\n      avg_rank: avg_rank != null ? Math.round(avg_rank) : '',\n      avg_conf: avg_conf != null ? Number(avg_conf.toFixed(2)) : '',\n    }\n  });\n}\n\nreturn out;\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2752,
+        544
+      ],
+      "id": "55961781-461f-49b8-9940-c1dbf549d994",
+      "name": "Prompt × Model Code"
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1s-eel-kPzgk6ldgLjeWt7p8WapTjCKAWZh2So8q88S8",
+          "mode": "list",
+          "cachedResultName": "LLM Scraping",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1s-eel-kPzgk6ldgLjeWt7p8WapTjCKAWZh2So8q88S8/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 1020875006,
+          "mode": "list",
+          "cachedResultName": "AEO_Prompt_Model_Scores",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1s-eel-kPzgk6ldgLjeWt7p8WapTjCKAWZh2So8q88S8/edit#gid=1020875006"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "run_id": "={{$json.run_id}}",
+            "prompt_id": "={{$json.prompt_id}}",
+            "prompt_text": "={{$json.prompt_text}}",
+            "model": "={{$json.model}}",
+            "brands_total": "={{$json.brands_total}}",
+            "mentions": "={{$json.mentions}}",
+            "mention_rate": "={{$json.mentions_rate}}",
+            "avg_rank": "={{$json.avg_rank}}",
+            "avg_conf": "={{$json.avg_conf}}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "run_id",
+              "displayName": "run_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "prompt_id",
+              "displayName": "prompt_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "prompt_text",
+              "displayName": "prompt_text",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "model",
+              "displayName": "model",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "brands_total",
+              "displayName": "brands_total",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "mentions",
+              "displayName": "mentions",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "mention_rate",
+              "displayName": "mention_rate",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "avg_rank",
+              "displayName": "avg_rank",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "avg_conf",
+              "displayName": "avg_conf",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        2960,
+        544
+      ],
+      "id": "4ea9cf31-c363-446d-a873-5b2f36f5aeae",
+      "name": "AEO_Prompt_Model_Scores",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "FBwaBF4NdPJxzqCu",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Input: rows from AEO_Brand_Model_Comparison (one per brand)\nconst round1 = (x) => Math.round(x * 10) / 10;\n\nreturn items.map((it) => {\n  const r = it.json;\n\n  const gpt = Number(r.score_gpt ?? 0);\n  const claude = Number(r.score_claude ?? 0);\n  const gemini = Number(r.score_gemini ?? 0);\n\n  const avg = Number(r.avg_visibility);\n  const avgVis = Number.isFinite(avg) ? avg : (gpt + claude + gemini) / 3;\n\n  const top =\n    r.best_model ??\n    (gpt >= claude && gpt >= gemini\n      ? (r.model_gpt ?? \"gpt\")\n      : claude >= gemini\n        ? (r.model_claude ?? \"claude\")\n        : (r.model_gemini ?? \"gemini\"));\n\n  const bottom =\n    r.worst_model ??\n    (gpt <= claude && gpt <= gemini\n      ? (r.model_gpt ?? \"gpt\")\n      : claude <= gemini\n        ? (r.model_claude ?? \"claude\")\n        : (r.model_gemini ?? \"gemini\"));\n\n  return {\n    json: {\n      run_id: r.run_id ?? \"\",\n      brand: r.brand ?? \"\",\n\n      gpt_visibility: gpt,\n      claude_visibility: claude,\n      gemini_visibility: gemini,\n      avg_visibility: round1(avgVis),\n\n      gpt_bias_vs_avg: round1(gpt - avgVis),\n      claude_bias_vs_avg: round1(claude - avgVis),\n      gemini_bias_vs_avg: round1(gemini - avgVis),\n\n      top_model: top,\n      bottom_model: bottom,\n    },\n  };\n});\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3328,
+        1440
+      ],
+      "id": "e0835ede-7100-48bd-90a0-65582ef82819",
+      "name": "Model Bias Analyzer"
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1s-eel-kPzgk6ldgLjeWt7p8WapTjCKAWZh2So8q88S8",
+          "mode": "list",
+          "cachedResultName": "LLM Scraping",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1s-eel-kPzgk6ldgLjeWt7p8WapTjCKAWZh2So8q88S8/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 1956760185,
+          "mode": "list",
+          "cachedResultName": "AEO_Brand_Model_Comparison",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1s-eel-kPzgk6ldgLjeWt7p8WapTjCKAWZh2So8q88S8/edit#gid=1956760185"
+        },
+        "filtersUI": {
+          "values": [
+            {
+              "lookupColumn": "run_id",
+              "lookupValue": "={{$items(\"Set Run ID\")[0].json.run_id}}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        3200,
+        1184
+      ],
+      "id": "f99d7ee8-2690-4060-8ef9-9fb44fe2c030",
+      "name": "Read Bias Sheet",
+      "executeOnce": true,
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "FBwaBF4NdPJxzqCu",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1s-eel-kPzgk6ldgLjeWt7p8WapTjCKAWZh2So8q88S8",
+          "mode": "list",
+          "cachedResultName": "LLM Scraping",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1s-eel-kPzgk6ldgLjeWt7p8WapTjCKAWZh2So8q88S8/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 870795594,
+          "mode": "list",
+          "cachedResultName": "AEO_Model_Bias",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1s-eel-kPzgk6ldgLjeWt7p8WapTjCKAWZh2So8q88S8/edit#gid=870795594"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "run_id": "={{$json.run_id}}",
+            "brand": "={{$json.brand}}",
+            "gpt_visibility": "={{$json.gpt_visibility}}",
+            "claude_visibility": "={{$json.claude_visibility}}",
+            "gemini_visibility": "={{$json.gemini_visibility}}",
+            "avg_visibility": "={{$json.avg_visibility}}",
+            "gpt_bias_vs_avg": "={{$json.gpt_bias_vs_avg}}",
+            "claude_bias_vs_avg": "={{$json.claude_bias_vs_avg}}",
+            "gemini_bias_vs_avg": "={{$json.gemini_bias_vs_avg}}",
+            "top_model": "={{$json.top_model}}",
+            "bottom_model": "={{$json.bottom_model}}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "run_id",
+              "displayName": "run_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "brand",
+              "displayName": "brand",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "gpt_visibility",
+              "displayName": "gpt_visibility",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "claude_visibility",
+              "displayName": "claude_visibility",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "gemini_visibility",
+              "displayName": "gemini_visibility",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "avg_visibility",
+              "displayName": "avg_visibility",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "gpt_bias_vs_avg",
+              "displayName": "gpt_bias_vs_avg",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "claude_bias_vs_avg",
+              "displayName": "claude_bias_vs_avg",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "gemini_bias_vs_avg",
+              "displayName": "gemini_bias_vs_avg",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "top_model",
+              "displayName": "top_model",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "bottom_model",
+              "displayName": "bottom_model",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        3552,
+        1440
+      ],
+      "id": "1661c0e1-f72a-4c10-a9ea-e7e15c4c26c4",
+      "name": "Append Brand Model Bias Sheet",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "FBwaBF4NdPJxzqCu",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "dac91dbb-f648-4d99-87bd-4836ea675ab7",
+              "name": "=run_id",
+              "value": "={{ $json.run_id }}",
+              "type": "string"
+            },
+            {
+              "id": "783aaece-f156-4238-9b3a-daa465e5536d",
+              "name": "=run_timestamp",
+              "value": "={{ $json.timestamp }}",
+              "type": "string"
+            },
+            {
+              "id": "a2adfdad-c1cf-48fd-b441-5a6cc5e242e5",
+              "name": "sector",
+              "value": "fitness",
+              "type": "string"
+            },
+            {
+              "id": "5ddf435a-5801-4f74-87db-3e9521bcc70d",
+              "name": "prompt_set_name",
+              "value": "gym_fitness_prompts_v1",
+              "type": "string"
+            },
+            {
+              "id": "3245170d-43eb-440b-a62c-ad197283ec97",
+              "name": "models_used",
+              "value": "openai;gemini;claude",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        544,
+        1008
+      ],
+      "id": "880d84e5-1fe1-49d8-a06f-56007cafa8a5",
+      "name": "Set Run Metadata"
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1s-eel-kPzgk6ldgLjeWt7p8WapTjCKAWZh2So8q88S8",
+          "mode": "list",
+          "cachedResultName": "LLM Scraping",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1s-eel-kPzgk6ldgLjeWt7p8WapTjCKAWZh2So8q88S8/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 122905463,
+          "mode": "list",
+          "cachedResultName": "Runs",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1s-eel-kPzgk6ldgLjeWt7p8WapTjCKAWZh2So8q88S8/edit#gid=122905463"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "run_id": "={{ $json.run_id }}",
+            "run_timestamp": "={{ $json.run_timestamp }}",
+            "sector": "={{ $json.sector }}",
+            "prompt_set_name": "={{ $json.prompt_set_name }}",
+            "models_used": "={{ $json.models_used }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "run_id",
+              "displayName": "run_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "run_timestamp",
+              "displayName": "run_timestamp",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "sector",
+              "displayName": "sector",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "prompt_set_name",
+              "displayName": "prompt_set_name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "models_used",
+              "displayName": "models_used",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        752,
+        1008
+      ],
+      "id": "e799ed46-7aff-457d-8cb1-25ff159694c5",
+      "name": "AEO_Run Sheet",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "FBwaBF4NdPJxzqCu",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "/**\n * AEO Trends (Brand x Model)\n * Outputs rows with your exact headers:\n * sector, brand, model, run_id_current, visibility_current, run_id_prev,\n * visibility_prev, delta_visibility, delta_rank, notes\n *\n * EXPECTED INPUT (from your Read node, e.g. AEO_Scores_By_Model):\n * - run_id\n * - brand\n * - engine  (or \"model\")  <-- we normalize to \"model\"\n * - visibility_score      <-- we normalize to \"visibility\"\n * - avg_rank              <-- optional but recommended for delta_rank\n *\n * OPTIONAL: If you also add a \"Read Runs\" node (from Runs sheet) that returns:\n * - run_id\n * - run_timestamp\n * then rename that node to \"Read Runs\" and this will sort by timestamp.\n */\n\n// ---- CONFIG (adjust if your node names differ) ----\nconst RUNS_NODE_NAME = \"Read Runs\"; // optional node that reads Runs sheet\nconst DEFAULT_SECTOR = \"fitness\";   // or pull from a Set node if you want\n\n// Try to build a run_id -> timestamp map (optional)\nlet runTimeById = {};\ntry {\n  const runItems = $items(RUNS_NODE_NAME) || [];\n  for (const it of runItems) {\n    const r = it.json || {};\n    if (r.run_id && r.run_timestamp) {\n      runTimeById[String(r.run_id)] = String(r.run_timestamp);\n    }\n  }\n} catch (e) {\n  // If node doesn't exist, we just fall back to sorting by run_id\n  runTimeById = {};\n}\n\n// Helper: comparable “time” for sorting runs\nfunction runSortKey(run_id) {\n  const ts = runTimeById[String(run_id)];\n  if (ts) {\n    const t = Date.parse(ts);\n    if (!Number.isNaN(t)) return t;\n  }\n  // fallback: run_id string\n  return String(run_id);\n}\n\n// Normalize model label from \"engine\" or \"model\"\nfunction normalizeModel(row) {\n  const raw = row.engine ?? row.model ?? \"\";\n  return String(raw).trim();\n}\n\n// Normalize visibility score field\nfunction normalizeVisibility(row) {\n  const v = row.visibility_score ?? row.visibility ?? row.visibility_current ?? 0;\n  const n = Number(v);\n  return Number.isFinite(n) ? n : 0;\n}\n\n// Normalize avg_rank field\nfunction normalizeAvgRank(row) {\n  const r = row.avg_rank ?? row.rank ?? null;\n  const n = Number(r);\n  return Number.isFinite(n) ? n : null;\n}\n\n// Determine sector (you can wire this from Set Run Metadata if you want)\nfunction normalizeSector(row) {\n  // If your input rows already contain sector, use it; else default.\n  return String(row.sector ?? DEFAULT_SECTOR).trim();\n}\n\n// ---- MAIN: group rows by brand+model, find latest + previous run ----\nconst rows = items.map(i => i.json);\n\n// group key: brand||model\nconst grouped = new Map();\n\nfor (const r of rows) {\n  const brand = String(r.brand ?? \"\").trim();\n  const model = normalizeModel(r);\n  const run_id = String(r.run_id ?? \"\").trim();\n\n  if (!brand || !model || !run_id) continue;\n\n  const visibility = normalizeVisibility(r);\n  const avg_rank = normalizeAvgRank(r);\n  const sector = normalizeSector(r);\n\n  const key = `${brand}||${model}`;\n\n  if (!grouped.has(key)) grouped.set(key, []);\n  grouped.get(key).push({\n    sector,\n    brand,\n    model,\n    run_id,\n    visibility,\n    avg_rank,\n    sortKey: runSortKey(run_id),\n  });\n}\n\nconst output = [];\n\nfor (const [key, arr] of grouped.entries()) {\n  // Sort ascending by run time (or run_id); pick last two\n  arr.sort((a, b) => {\n    if (a.sortKey < b.sortKey) return -1;\n    if (a.sortKey > b.sortKey) return 1;\n    return 0;\n  });\n\n  if (arr.length < 2) {\n    // Not enough history to create a delta row\n    continue;\n  }\n\n  const current = arr[arr.length - 1];\n  const prev = arr[arr.length - 2];\n\n  const delta_visibility = Number((current.visibility - prev.visibility).toFixed(3));\n\n  // delta_rank: positive means rank got WORSE if rank number increased (depends on your convention)\n  // We'll compute current - prev (optional)\n  let delta_rank = null;\n  if (current.avg_rank !== null && prev.avg_rank !== null) {\n    delta_rank = Number((current.avg_rank - prev.avg_rank).toFixed(3));\n  }\n\n  // Notes\n  let notes = \"\";\n  if (delta_visibility > 0) notes = \"Up vs prev\";\n  else if (delta_visibility < 0) notes = \"Down vs prev\";\n  else notes = \"Flat vs prev\";\n\n  output.push({\n    sector: current.sector,\n    brand: current.brand,\n    model: current.model,\n    run_id_current: current.run_id,\n    visibility_current: current.visibility,\n    run_id_prev: prev.run_id,\n    visibility_prev: prev.visibility,\n    delta_visibility,\n    delta_rank, // matches your \"(optional)\" column\n    notes,\n  });\n}\n\n// Return as n8n items\nreturn output.map(o => ({ json: o }));\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3968,
+        1440
+      ],
+      "id": "1e336539-d918-461f-a961-f78d76009641",
+      "name": "Build Trend Rows"
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1s-eel-kPzgk6ldgLjeWt7p8WapTjCKAWZh2So8q88S8",
+          "mode": "list",
+          "cachedResultName": "LLM Scraping",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1s-eel-kPzgk6ldgLjeWt7p8WapTjCKAWZh2So8q88S8/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 1411376757,
+          "mode": "list",
+          "cachedResultName": "AEO_Scores_By_Model",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1s-eel-kPzgk6ldgLjeWt7p8WapTjCKAWZh2So8q88S8/edit#gid=1411376757"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        3760,
+        1440
+      ],
+      "id": "ad79a1c5-b2be-44ce-bee3-558849720a44",
+      "name": "Read Scores By Model",
+      "executeOnce": true,
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "FBwaBF4NdPJxzqCu",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1s-eel-kPzgk6ldgLjeWt7p8WapTjCKAWZh2So8q88S8",
+          "mode": "list",
+          "cachedResultName": "LLM Scraping",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1s-eel-kPzgk6ldgLjeWt7p8WapTjCKAWZh2So8q88S8/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 448011370,
+          "mode": "list",
+          "cachedResultName": "AEO_Trends_Brand_Model",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1s-eel-kPzgk6ldgLjeWt7p8WapTjCKAWZh2So8q88S8/edit#gid=448011370"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "sector": "={{ $json.sector }}",
+            "brand": "={{ $json.brand }}",
+            "model": "={{ $json.model }}",
+            "run_id_current": "={{ $json.model }}",
+            "visibility_current": "={{ $json.visibility_current }}",
+            "run_id_prev": "={{ $json.run_id_prev }}",
+            "visibility_prev": "={{ $json.visibility_prev }}",
+            "delta_visibility": "={{ $json.delta_visibility }}",
+            "delta_rank (optional)": "={{ $json.delta_rank (optional)}}",
+            "notes": "={{ $json.notes}}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "sector",
+              "displayName": "sector",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "brand",
+              "displayName": "brand",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "model",
+              "displayName": "model",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "run_id_current",
+              "displayName": "run_id_current",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "visibility_current",
+              "displayName": "visibility_current",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "run_id_prev",
+              "displayName": "run_id_prev",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "visibility_prev",
+              "displayName": "visibility_prev",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "delta_visibility",
+              "displayName": "delta_visibility",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "delta_rank (optional)",
+              "displayName": "delta_rank (optional)",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "notes",
+              "displayName": "notes",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        4176,
+        1440
+      ],
+      "id": "27a0bb0e-1371-4cf4-b34c-133ff0923c42",
+      "name": "Append in Trends Sheet",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "FBwaBF4NdPJxzqCu",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "amount": 11
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        1216,
+        736
+      ],
+      "id": "704fe813-497d-4a0d-b923-54edceed3980",
+      "name": "Wait",
+      "webhookId": "fb6dba83-927c-431a-a3ae-4e01cf931a7d"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "When clicking ‘Execute workflow’": {
+      "main": [
+        [
+          {
+            "node": "Set Run ID",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get row(s) in sheet": {
+      "main": [
+        [
+          {
+            "node": "Attach Run ID",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Chat GPT Chain",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build LLM Input": {
+      "main": [
+        [
+          {
+            "node": "Claude Chain",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Chat GPT Chain",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Wait",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Append row in AI Visibility Log": {
+      "main": [
+        [
+          {
+            "node": "AI Vis into AEO",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Vis into AEO": {
+      "main": [
+        [
+          {
+            "node": "Brand Level Code",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Brand Level by Model",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Prompt × Model Code",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Brand Level Code": {
+      "main": [
+        [
+          {
+            "node": "Append row in AEO Scores",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Append row in AEO Scores": {
+      "main": [
+        [
+          {
+            "node": "AEO Scores Row",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AEO Scores Row": {
+      "main": [
+        [
+          {
+            "node": "AEO Reco's",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model1": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AEO Reco's",
+            "type": "ai_languageModel",
+            "index": 0
+          },
+          {
+            "node": "Structured Output Parser1",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AEO Reco's": {
+      "main": [
+        [
+          {
+            "node": "Suggestion Code",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Suggestion Code": {
+      "main": [
+        [
+          {
+            "node": "AEO Reco",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Structured Output Parser1": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "AEO Reco's",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set Run ID": {
+      "main": [
+        [
+          {
+            "node": "Get row(s) in sheet",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Set Run Metadata",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Attach Run ID": {
+      "main": [
+        [
+          {
+            "node": "Build LLM Input",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Gemini Chain",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Anthropic Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Claude Chain",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gemini Chain": {
+      "main": [
+        [
+          {
+            "node": "Gemini Set",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "GPT Set": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gemini Set": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Claude Set": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 2
+          }
+        ]
+      ]
+    },
+    "Claude Chain": {
+      "main": [
+        [
+          {
+            "node": "Claude Set",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge": {
+      "main": [
+        [
+          {
+            "node": "Models Code",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Chat GPT Chain": {
+      "main": [
+        [
+          {
+            "node": "GPT Set",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Models Code": {
+      "main": [
+        [
+          {
+            "node": "Append row in AI Visibility Log",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Brand Level by Model": {
+      "main": [
+        [
+          {
+            "node": "Append row in sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Brand × Model Comparison Code": {
+      "main": [
+        [
+          {
+            "node": "AEO_Brand_Model_Comparison",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Append row in sheet": {
+      "main": [
+        [
+          {
+            "node": "Brand × Model Comparison Code",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prompt × Model Code": {
+      "main": [
+        [
+          {
+            "node": "AEO_Prompt_Model_Scores",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AEO_Brand_Model_Comparison": {
+      "main": [
+        [
+          {
+            "node": "Read Bias Sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Model Bias Analyzer": {
+      "main": [
+        [
+          {
+            "node": "Append Brand Model Bias Sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Bias Sheet": {
+      "main": [
+        [
+          {
+            "node": "Model Bias Analyzer",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set Run Metadata": {
+      "main": [
+        [
+          {
+            "node": "AEO_Run Sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Append Brand Model Bias Sheet": {
+      "main": [
+        [
+          {
+            "node": "Read Scores By Model",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Scores By Model": {
+      "main": [
+        [
+          {
+            "node": "Build Trend Rows",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Trend Rows": {
+      "main": [
+        [
+          {
+            "node": "Append in Trends Sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait": {
+      "main": [
+        [
+          {
+            "node": "Gemini Chain",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "69894938-4978-4c1e-af5b-63e181147209",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "6e41c8966058236a06754795cf08085b57b4b86a6d09a5d4f2e583561418308b"
+  },
+  "id": "IWMvzlNa3U7Q5BIi",
+  "tags": []
+}

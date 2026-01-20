@@ -1,0 +1,516 @@
+{
+  "name": "Smart Meal Planner & Grocery",
+  "nodes": [
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ `\nYou are an intelligent weekly meal planning assistant. Your job is to create simple, healthy, and tasty meal ideas for the upcoming week based on the user's preferences and constraints. Ensure each meal is realistic to cook at home, cost-conscious, and fits within dietary goals.\n\nHere are the user's preferences and constraints:\n- Preferred meats: ${$json[\"meats\"].join(\", \")}\n- Diet rules: ${$json[\"diet_rules\"]}\n- Foods to exclude: ${$json[\"exclude\"].join(\", \")}\n- Maximum calories per meal: ${$json[\"max_cals_per_meal\"]}\n- Maximum cooking time: ${$json[\"max_time_minutes\"]} minutes\n- Available equipment: ${$json[\"equipment\"]}\n- Servings per meal: ${$json[\"servings\"]}\n\n---\n\nPlease generate **exactly 5 meal ideas** that:\n- Take no longer than ${$json[\"max_time_minutes\"]} minutes to cook  \n- Stay under ${$json[\"max_cals_per_meal\"]} calories  \n- Follow the user's dietary rules  \n- Avoid all ingredients listed in “exclude”  \n- Use ingredients compatible with the available kitchen equipment  \n- Are easy for a casual home cook  \n\nEach meal should follow this schema:\n{\n  \"meal_name\": \"string\",\n  \"description\": \"string\",\n  \"calories\": number,\n  \"cook_time_minutes\": number,\n  \"ingredients\": [\"string\", \"string\"],\n  \"instructions\": \"string\"\n}\n\nReturn **only a valid JSON array** following that structure — no markdown, no explanations, no extra text.\nValidate that it is valid JSON before replying.\n` }}\n",
+        "batching": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.7,
+      "position": [
+        -608,
+        928
+      ],
+      "id": "3a0fa8c2-3541-4d0a-9935-4bbb040a12d8",
+      "name": "Basic LLM Chain",
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-4.1-mini"
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        -160,
+        96
+      ],
+      "id": "01686e88-a74b-4029-80db-f54245d377a6",
+      "name": "OpenAI Chat Model",
+      "credentials": {
+        "openAiApi": {
+          "id": "G3tFjZ0hwskFiRey",
+          "name": "n8n free OpenAI API credits"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sendTo": "liam.mcandrews98@gmail.com",
+        "subject": "={{$node[\"Build Email Payload\"].json.subject || \"Your Weekly Smart Meal & Workout Plan\"}}\n",
+        "message": "=<html>\n  <body style=\"font-family: Arial, sans-serif; color: #333; line-height: 1.6;\">\n    <h1 style=\"color: #2b6cb0;\">🍽 Your Weekly Smart Meal Plan</h1>\n    <p>Hi there! Here's your personalized <b>Smart Meal Boss</b> plan.</p>\n\n    <hr style=\"border: none; border-top: 2px solid #eee; margin: 20px 0;\" />\n\n    <!-- MEALS (summary) -->\n    {{$json.summary || ''}}\n\n    <hr style=\"border: none; border-top: 2px solid #eee; margin: 20px 0;\" />\n\n    <!-- WORKOUTS -->\n    {{$json.workouts_html || ''}}\n\n    <hr style=\"border: none; border-top: 2px solid #eee; margin: 20px 0;\" />\n\n    <!-- GROCERY LIST -->\n    <h2>🛒 Grocery List</h2>\n    {{$json.grocery_html || ''}}\n\n    <p style=\"margin-top: 30px; font-size: 12px; color: #777;\">\n      Generated automatically by <b>Smart Meal Boss 🧠</b>.<br/>\n      This email was sent automatically with n8n.\n    </p>\n  </body>\n</html>\n",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        864,
+        80
+      ],
+      "id": "9e399c3b-fa37-46cd-8892-6cfdbc99f7ac",
+      "name": "Send a message",
+      "webhookId": "3498d3a7-2695-421b-bb94-717812e5ac4b",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "JLk3uguGRihQUfKA",
+          "name": "Gmail account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "weeks",
+              "triggerAtHour": 12
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -608,
+        176
+      ],
+      "id": "6240b25b-8546-4f96-9cfe-3ee6fefb341d",
+      "name": "Food Trigger"
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "combineBy": "combineAll",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        -608,
+        704
+      ],
+      "id": "42973949-8fba-40df-a12a-e69ad8bc5429",
+      "name": "Merge",
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "jsCode": "// 1. get the raw LLM output (same as summary node)\nconst raw =\n  $json.output               // what your agent currently uses\n  || $json.text              // fallback\n  || '[]';\n\nlet meals = [];\ntry {\n  meals = JSON.parse(raw);\n} catch (e) {\n  meals = [];\n}\n\n// helper: normalize an ingredient\nconst normalize = (s) => {\n  if (!s) return '';\n  let x = s.toLowerCase().trim();\n\n  // remove leading qty + unit-ish\n  x = x.replace(\n    /^(?:\\d+([\\/.]\\d+)?|\\d+\\s+\\d+\\/\\d+)\\s*(cups?|cup|tbsp|tablespoons?|tsp|teaspoons?|pound|lb|lbs|oz|ounce|ounces|gram|g|kg|ml|l)\\s*/i,\n    ''\n  );\n\n  // remove filler words\n  x = x\n    .replace(/\\b(of|fresh|low-sodium|unsalted|optional)\\b/g, '')\n    .replace(/\\s+/g, ' ')\n    .trim();\n\n  return x;\n};\n\n// simple category map\nconst catMap = [\n  { cat: 'Produce', keys: ['lettuce', 'spinach', 'kale', 'onion', 'garlic', 'pepper', 'tomato', 'zucchini', 'carrot', 'broccoli', 'potato', 'lemon', 'lime'] },\n  { cat: 'Proteins', keys: ['chicken', 'turkey', 'beef', 'pork', 'tofu', 'egg', 'salmon', 'shrimp'] },\n  { cat: 'Grains & Pasta', keys: ['rice', 'quinoa', 'pasta', 'noodles', 'spaghetti', 'tortilla', 'bread', 'panko'] },\n  { cat: 'Dairy & Cheese', keys: ['milk', 'cheese', 'yogurt', 'cream', 'parmesan', 'mozzarella', 'butter', 'greek yogurt'] },\n  { cat: 'Pantry', keys: ['oil', 'olive oil', 'soy sauce', 'tomato sauce', 'broth', 'stock', 'beans', 'chickpeas', 'coconut milk'] },\n  { cat: 'Spices & Condiments', keys: ['salt', 'pepper', 'paprika', 'cumin', 'oregano', 'basil', 'garlic powder', 'onion powder', 'hot sauce'] },\n  { cat: 'Frozen & Other', keys: [] },\n];\n\nconst buckets = {};\nconst counts = {};\n\nmeals.forEach((meal) => {\n  if (!Array.isArray(meal.ingredients)) return;\n\n  meal.ingredients.forEach((ingRaw) => {\n    const ing = normalize(ingRaw);\n    if (!ing) return;\n\n    // count\n    counts[ing] = (counts[ing] || 0) + 1;\n\n    // pick a category\n    let chosen = 'Frozen & Other';\n    for (const { cat, keys } of catMap) {\n      if (keys.some((k) => ing.includes(k))) {\n        chosen = cat;\n        break;\n      }\n    }\n\n    if (!buckets[chosen]) buckets[chosen] = new Set();\n    buckets[chosen].add(ing);\n  });\n});\n\n// build HTML + MD\nconst html = ['<h2>🛒 Consolidated Grocery List</h2>'];\nconst md = ['## 🛒 Consolidated Grocery List'];\n\nfor (const { cat } of catMap) {\n  if (!buckets[cat]) continue;\n  html.push(`<h3>${cat}</h3><ul>`);\n  md.push(`\\n### ${cat}`);\n\n  for (const ing of buckets[cat]) {\n    const times = counts[ing] || 1;\n    const label = times > 1 ? `${ing} ×${times}` : ing;\n    html.push(`<li>${label}</li>`);\n    md.push(`- ${label}`);\n  }\n\n  html.push('</ul>');\n}\n\nreturn [\n  {\n    json: {\n      grocery_html: html.join(''),\n      grocery_md: md.join('\\n'),\n      grocery_counts: counts,\n    },\n  },\n];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        192,
+        -128
+      ],
+      "id": "fb4c976b-b855-400c-9d4d-b577b81d694a",
+      "name": "Grocery List Code"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "You are Smart Meal Boss, an AI meal-planning assistant with memory.\n\nYour job:\nLook at the user’s preferences coming in from the previous node (JSON) and generate a weekly plan of 5 dinners and 5 work lunches, plus structured data that downstream tools can use for summaries and grocery lists.\n\n1. Input you receive\n\nYou receive a single JSON object with fields like:\n\n{\n  \"meats\": [\"chicken\", \"ground turkey\", \"lean beef\"],\n  \"diet_rules\": \"high-protein, moderate carbs, lots of veggies, low added sugar\",\n  \"exclude\": [\"fish\", \"avocado\"],\n  \"max_cals_per_meal\": 1300,\n  \"max_time_minutes\": 30,\n  \"equipment\": \"basic home kitchen (stovetop, oven, airfryer optional)\",\n  \"servings\": 2\n}\n\n\nTreat these as the user’s current preferences and constraints.\n\nAdditionally, you have memory of recent past meal plans.\nUse that memory to avoid repeating the same meals too often, especially across the last 3 plans.\n\n2. Hard rules (do NOT violate)\n\nMeal count & types\n\nAlways generate exactly 10 meals:\n\n5 dinners (Mon–Fri)\n\n5 work lunches (Mon–Fri)\n\nNo fewer, no more.\n\nAbsolute exclusions\n\nNo fish or seafood of any kind:\nThis includes shrimp, salmon, tuna, cod, shellfish, etc.\nDo not use them in any dinner or lunch.\n\nNo avocado in any meal.\n\nIf you ever create a meal that uses fish, seafood, or avocado, you MUST replace it with a compliant meal before finalizing your answer.\n\nCalories\n\nUse max_cals_per_meal as the upper limit for dinners.\nExample: if max_cals_per_meal is 1300, dinners should be ≤ 1300 calories.\n\nWork lunches must be strictly under 1000 calories (e.g., 800–980 is fine, 1000 is not).\n\nIf the input doesn’t specify max_cals_per_meal, assume 1200 for dinners and keep lunches under 900.\n\nCook time\n\nRespect max_time_minutes for both dinners and lunches.\nExample: if max_time_minutes is 30, all meals should have cook_time_minutes ≤ 30.\n\nPractical constraints\n\nDinners: normal home-cooked meals using the equipment provided (stovetop, oven, air fryer optional, etc.).\n\nWork lunches:\n\nMust be realistic to eat at work:\n\nEither microwaveable meal-prep containers\n\nOr salads / wraps / bowls that are safe to eat cold.\n\nNo meals that require a full kitchen at work.\n\nAvoid meals that conflict with exclude items or the spirit of diet_rules.\n\nUse preferences\n\nFavor proteins listed in meats (e.g., chicken, ground turkey, lean beef).\n\nFollow diet_rules (e.g., high-protein, moderate carbs, lots of veggies, low added sugar).\n\nUse memory to:\n\nPrefer ingredients the user liked before.\n\nAvoid serving identical meals the user had in the last 3 weekly plans, unless variety is impossible.\n\n3. Meal labeling & structure\n\nYou must label each meal with day and meal_type:\n\nday: \"Monday\", \"Tuesday\", \"Wednesday\", \"Thursday\", \"Friday\"\n\nmeal_type: \"dinner\" or \"lunch\"\n\nThere should be:\n\nOne \"dinner\" and one \"lunch\" for each weekday (Mon–Fri).\n\n4. Output format (IMPORTANT)\n\nReturn ONLY a JSON array (no extra commentary, no markdown, no explanation), in this exact shape:\n\n[\n  {\n    \"day\": \"Monday\",\n    \"meal_type\": \"dinner\",\n    \"meal_name\": \"Herbed Chicken with Quinoa and Roasted Vegetables\",\n    \"description\": \"Chicken breasts seasoned with herbs, served with quinoa and roasted veggies for a high-protein dinner.\",\n    \"cook_time_minutes\": 30,\n    \"calories\": 1250,\n    \"ingredients\": [\n      \"chicken breasts\",\n      \"quinoa\",\n      \"carrots\",\n      \"zucchini\",\n      \"bell pepper\",\n      \"olive oil\",\n      \"garlic\",\n      \"salt\",\n      \"black pepper\"\n    ],\n    \"instructions\": \"Season chicken with herbs, salt, and pepper. Roast vegetables with olive oil. Cook quinoa. Serve chicken and veggies over quinoa.\"\n  }\n]\n\n\nDetails:\n\nday: \"Monday\" / \"Tuesday\" / \"Wednesday\" / \"Thursday\" / \"Friday\"\n\nmeal_type: \"dinner\" or \"lunch\"\n\nmeal_name: short, appetizing title.\n\ndescription: 1–2 sentences, friendly and clear.\n\ncook_time_minutes: integer, respecting the max_time_minutes constraint.\n\ncalories: integer, respecting all calorie rules above.\n\ningredients: array of simple ingredient strings (no quantities needed).\n\ninstructions: 1–3 clear sentences describing how to cook/assemble the meal.\n\nYou must output 10 objects in the array:\n\n5 with \"meal_type\": \"dinner\"\n\n5 with \"meal_type\": \"lunch\"\n\nDo not wrap this JSON in backticks, markdown, or any extra text.\nThe workflow will parse this JSON directly from your reply.\n\n5. Behavior summary\n\nRead the current preferences JSON.\n\nUse your memory of recent weeks to avoid repeating the exact same meals.\n\nCreate 5 dinners + 5 work lunches that respect:\n\nno fish/seafood, no avocado\n\nuser meats, diet_rules, exclude\n\nmax_cals_per_meal for dinners\n\nlunches < 1000 calories\n\nmax_time_minutes for all meals\n\nLabel each meal with day and meal_type.\n\nReturn only the JSON array described above.",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2.2,
+      "position": [
+        -160,
+        -128
+      ],
+      "id": "ed1d2c59-88dd-4e61-8bdf-69e344df6bb6",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "description": "Formats the AI’s meal plan JSON into a structured, styled weekly HTML summary for email delivery.",
+        "jsCode": "// Parse the OpenAI \"text\" field safely\nconst raw = $json.text || '[]';\nlet meals = [];\n\ntry {\n  meals = JSON.parse(raw);\n} catch (e) {\n  meals = []; // fallback\n}\n\n// Escape HTML for safety\nconst escapeHTML = (str) => String(str)\n  .replace(/&/g, \"&amp;\")\n  .replace(/</g, \"&lt;\")\n  .replace(/>/g, \"&gt;\")\n  .replace(/\"/g, \"&quot;\")\n  .replace(/'/g, \"&#039;\");\n\n// Build HTML summary\nlet summary = \"🍽️ <b>Your Weekly Smart Meal Plan</b><br><hr><br>\";\n\nmeals.forEach((meal, i) => {\n  summary += `<b>${i + 1}. ${escapeHTML(meal.meal_name || \"Untitled Meal\")}</b><br>`;\n  summary += `${escapeHTML(meal.description || \"No description\")}<br>`;\n  summary += `⏱️ ${escapeHTML(meal.cook_time_minutes ?? \"?\")} min | 🔥 ${escapeHTML(meal.calories ?? \"?\")} cal<br>`;\n  summary += `🥦 <i>Ingredients:</i> ${(Array.isArray(meal.ingredients) ? meal.ingredients.map(escapeHTML).join(\", \") : \"N/A\")}<br>`;\n  summary += `👨‍🍳 <i>Instructions:</i> ${escapeHTML(meal.instructions || \"Not provided\")}<br><br><hr><br>`;\n});\n\n// ✅ FIX: Return as string, not object\nreturn JSON.stringify({ summary });\n\n"
+      },
+      "type": "@n8n/n8n-nodes-langchain.toolCode",
+      "typeVersion": 1.3,
+      "position": [
+        -608,
+        1360
+      ],
+      "id": "5e786292-52a3-47ad-89a3-6ea091095a69",
+      "name": "Meal Plan Summary",
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "description": "Generates a categorized grocery list (HTML + markdown) from the meal plan’s ingredients, grouping items by type (produce, proteins, grains, etc.).",
+        "jsCode": "const meals = Array.isArray($json)\n  ? $json\n  : JSON.parse($json.text || '[]');\n\nconst normalize = (s) => {\n  if (!s) return '';\n  let x = s.toLowerCase().trim();\n  x = x.replace(\n    /^(~?\\d+(\\.\\d+)?\\s*(cup|cups|tbsp|tablespoon|tsp|teaspoon|pound|lb|lbs|oz|ounce|ounces|gram|g|kg|ml|l|clove|cloves|head|heads|can|cans|slice|slices|piece|pieces|sprig|sprigs)\\b[^\\w]*)+/g,\n    ''\n  );\n  x = x.replace(/\\b(of|fresh|low\\-sodium|reduced\\-sodium)\\b/g, '').trim();\n  x = x.replace(/[.,;:()]/g, '').replace(/\\s{2,}/g, ' ').trim();\n  return x;\n};\n\nconst catMap = [\n  { cat: '🥬 Produce', kws: ['lettuce','spinach','kale','pepper','onion','garlic','ginger','broccoli','cauliflower','tomato','cucumber','carrot','zucchini','snap pea','pea','mushroom','lemon','lime','avocado','herb','cilantro','parsley'] },\n  { cat: '🍗 Proteins', kws: ['chicken','turkey','beef','pork','tofu','salmon','shrimp','egg','eggs'] },\n  { cat: '🥖 Grains & Bread', kws: ['rice','quinoa','pasta','noodle','tortilla','bread','wrap'] },\n  { cat: '🧀 Dairy & Eggs', kws: ['milk','yogurt','cheese','parmesan','mozzarella','butter','egg','eggs'] },\n  { cat: '🥫 Pantry & Canned', kws: ['olive oil','soy sauce','stock','broth','tomato sauce','canned','beans','corn','hoisin','salsa'] },\n  { cat: '🧂 Spices & Condiments', kws: ['salt','pepper','chili','cumin','paprika','oregano','basil','vinegar','mustard','honey','sugar','spice'] },\n];\n\nconst categorize = (item) => {\n  for (const group of catMap) {\n    if (group.kws.some(k => item.includes(k))) return group.cat;\n  }\n  return '🧊 Frozen & Other';\n};\n\nconst buckets = {};\nconst counts = {};\n\nfor (const meal of meals) {\n  const ingList = meal.ingredients || [];\n  for (let raw of ingList) {\n    const ing = normalize(String(raw));\n    if (!ing) continue;\n    const cat = categorize(ing);\n    buckets[cat] ??= new Map();\n    counts[ing] = (counts[ing] || 0) + 1;\n    const prev = buckets[cat].get(ing);\n    if (!prev || ing.length < prev.length) buckets[cat].set(ing, ing);\n  }\n}\n\nconst html = ['<h2>🛒 Grocery List</h2>'];\n\nfor (const { cat } of catMap) {\n  if (!buckets[cat]) continue;\n  html.push(`<h3>${cat}</h3><ul>`);\n  for (const ing of [...buckets[cat].values()].sort()) {\n    const times = counts[ing] > 1 ? ` ×${counts[ing]}` : '';\n    html.push(`<li>${ing}${times}</li>`);\n  }\n  html.push('</ul>');\n}\n\n// ✅ FIX: Return as string\nreturn JSON.stringify({ grocery_html: html.join('') });\n\n"
+      },
+      "type": "@n8n/n8n-nodes-langchain.toolCode",
+      "typeVersion": 1.3,
+      "position": [
+        -608,
+        1152
+      ],
+      "id": "5bdcb667-4a52-42e0-b5b6-88a4969941ed",
+      "name": "Grocery List Tool",
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "jsCode": "// 1. Get the agent output (JSON string of meals)\nconst raw = $json.output || $json.text || '[]';\n\nlet meals = [];\ntry {\n  meals = JSON.parse(raw);\n} catch (e) {\n  meals = [];\n}\n\n// 2. Group by meal_type\nconst dinners = meals.filter(m => (m.meal_type || '').toLowerCase() === 'dinner');\nconst lunches = meals.filter(m => (m.meal_type || '').toLowerCase() === 'lunch');\n\n// If meal_type is missing for some reason, treat everything as dinners\nconst allAsDinners = (!dinners.length && !lunches.length) ? meals : null;\n\n// Basic HTML escaper\nconst escapeHTML = (str) =>\n  String(str ?? '')\n    .replace(/&/g, '&amp;')\n    .replace(/</g, '&lt;')\n    .replace(/>/g, '&gt;')\n    .replace(/\"/g, '&quot;')\n    .replace(/'/g, '&#039;');\n\nconst dayNames = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];\n\nlet summary = '🍽️ <b>Your Weekly Smart Meal Plan</b><br><hr><br>';\n\n// Helper to render a section of meals with day labels\nconst renderSection = (emoji, title, list, defaultLabelPrefix) => {\n  if (!list || !list.length) return;\n\n  summary += `<h3>${emoji} ${escapeHTML(title)}</h3>`;\n\n  list.forEach((meal, idx) => {\n    const day = dayNames[idx] || `${defaultLabelPrefix} ${idx + 1}`;\n\n    summary += `<b>${day} – ${escapeHTML(meal.meal_name || 'Untitled Meal')}</b><br>`;\n    summary += `${escapeHTML(meal.description || 'No description')}<br>`;\n    summary += `⏱️ ${meal.cook_time_minutes ?? '?'} min | 🔥 ${meal.calories ?? '?'} cal<br>`;\n\n    const ings = Array.isArray(meal.ingredients)\n      ? meal.ingredients.map(escapeHTML).join(', ')\n      : 'N/A';\n\n    summary += `🥦 <i>Ingredients:</i> ${ings}<br>`;\n    summary += `👨‍🍳 <i>Instructions:</i> ${escapeHTML(meal.instructions || 'Not provided')}<br><br>`;\n  });\n\n  summary += '<hr><br>';\n};\n\n// 3. Render summary content\nif (allAsDinners) {\n  // Old behavior fallback: just dinners Mon–Fri\n  renderSection('🍽️', 'Dinners (Mon–Fri)', allAsDinners, 'Day');\n} else {\n  if (dinners.length) {\n    renderSection('🍽️', 'Dinners (Mon–Fri)', dinners, 'Dinner');\n  }\n  if (lunches.length) {\n    renderSection('🥪', 'Work Lunches (Mon–Fri)', lunches, 'Lunch');\n  }\n}\n\nreturn [\n  {\n    json: {\n      summary\n    }\n  }\n];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        192,
+        80
+      ],
+      "id": "57651aaf-d471-40d7-95d1-b81cb3f13bf7",
+      "name": "Meal Plan Summary2"
+    },
+    {
+      "parameters": {
+        "jsCode": "// We don't trust the order; we just look at which keys exist.\nlet grocery = {};\nlet summary = {};\nlet workouts = {};\n\nfor (const item of items) {\n  const j = item.json || {};\n\n  if (j.grocery_html) {\n    grocery = j;\n  } else if (j.workouts_html) {\n    workouts = j;\n  } else if (j.summary) {\n    summary = j;\n  }\n}\n\nreturn [\n  {\n    json: {\n      summary:       summary.summary || '',\n      grocery_html:  grocery.grocery_html || '',\n      workouts_html: workouts.workouts_html || '',\n    }\n  }\n];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        640,
+        80
+      ],
+      "id": "dd2dcbe7-fa67-4f88-95a2-50d363995ad3",
+      "name": "Build Email Payload"
+    },
+    {
+      "parameters": {
+        "mode": "raw",
+        "jsonOutput": "{\n  \"meats\": [\"chicken\", \"ground turkey\", \"lean beef\"],\n  \"diet_rules\": \"high-protein, moderate carbs, lots of veggies, low added sugar\",\n  \"exclude\": [\"fish\", \"avocado\"],\n  \"max_cals_per_meal\": 1300,\n  \"max_time_minutes\": 30,\n  \"equipment\": \"basic home kitchen (stovetop, oven, airfryer optional)\",\n  \"servings\": 2\n}\n",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -384,
+        -32
+      ],
+      "id": "3a13431a-3742-4fc5-a094-345c4fdb7b05",
+      "name": "Edit Fields"
+    },
+    {
+      "parameters": {
+        "mode": "raw",
+        "jsonOutput": "{\n  \"days\": [\"Monday\", \"Tuesday\", \"Wednesday\", \"Thursday\", \"Friday\", \"Sunday\"],\n  \"split\": {\n    \"Monday\": \"Shoulders + Core\",\n    \"Tuesday\": \"Back + Biceps\",\n    \"Wednesday\": \"Chest + Triceps\",\n    \"Thursday\": \"Legs + Core\",\n    \"Friday\": \"Arms\",\n    \"Sunday\": \"Moderate Cardio\"\n  },\n  \"goal\": \"build muscle, keep intensity high, stay under 60 minutes per session\",\n  \"constraints\": [\n    \"no barbell bench press\",\n    \"no barbell back squat\",\n    \"prefer dumbbells, cables, machines, and bodyweight movements\",\n    \"workouts must be under 60 minutes\"\n  ],\n  \"equipment\": \"standard gym with dumbbells, cables, machines, benches, and cardio equipment\"\n}\n",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -384,
+        384
+      ],
+      "id": "cfe84de4-380b-46c7-a2b2-2aa71a5b66b9",
+      "name": "Workout Prefs"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-4.1-mini"
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        -160,
+        608
+      ],
+      "id": "0c4d1c37-2cad-4520-9c74-2ff5b0fc2c39",
+      "name": "OpenAI Chat Model1",
+      "credentials": {
+        "openAiApi": {
+          "id": "G3tFjZ0hwskFiRey",
+          "name": "n8n free OpenAI API credits"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "You are a hypertrophy-focused workout planner.\n\nYou receive a JSON object from the previous node with fields like:\n\n{\n  \"days\": [\"Monday\", \"Tuesday\", \"Wednesday\", \"Thursday\", \"Friday\", \"Sunday\"],\n  \"split\": {\n    \"Monday\": \"Shoulders + Core\",\n    \"Tuesday\": \"Back + Biceps\",\n    \"Wednesday\": \"Chest + Triceps\",\n    \"Thursday\": \"Legs + Core\",\n    \"Friday\": \"Arms\",\n    \"Sunday\": \"Moderate Cardio\"\n  },\n  \"goal\": \"build muscle, keep intensity high, stay under 65 minutes per session\",\n  \"constraints\": [\n    \"no barbell bench press\",\n    \"no barbell back squat\",\n    \"prefer dumbbells, cables, machines, and bodyweight movements\",\n    \"workouts must be under 65 minutes\"\n  ],\n  \"equipment\": \"standard gym with dumbbells, cables, machines, benches, and cardio equipment\"\n}\n\nTreat that JSON as the source of truth for the weekly training split, goal, constraints, and available equipment.\n\nYou also have access to \"workout_memory\", which contains recent past weekly plans.\n\nUse workout_memory to:\n- Avoid giving the EXACT same list of exercises for the same day of the week as last time.\n- It is OK to keep some key movements consistent (e.g., dumbbell presses for chest, rows for back), but:\n  - Change angles, grips, rep ranges, or accessory exercises week to week.\n  - Example: one week use incline dumbbell press, the next week use flat dumbbell press or a machine press variant.\n\nGoal with memory:\n- Keep the overall split and big patterns consistent so long-term progression is possible.\n- BUT make enough variation each week that the plan does not feel copy-pasted.\n\n--------------------------------\nHARD RULES (DO NOT BREAK THESE)\n--------------------------------\n1. Use the split exactly:\n   - Monday: Shoulders + Core\n   - Tuesday: Back + Biceps\n   - Wednesday: Chest + Triceps\n   - Thursday: Legs + Core\n   - Friday: Arms\n   - Sunday: Moderate Cardio\n\n2. Each training day MUST have:\n   - \"day\": one of [\"Monday\",\"Tuesday\",\"Wednesday\",\"Thursday\",\"Friday\",\"Sunday\"]\n   - \"focus\": short text describing the muscle groups or goal (e.g. \"Shoulders + Core (Hypertrophy)\")\n   - \"duration_minutes\": UNDER 65 (aim for 45–55 minutes)\n   - \"exercises\": an array of 6-8 exercise strings\n   - Optional: \"notes\" for cues, tempo, or rest times\n\n3. Equipment & movement rules:\n   - NO barbell bench press.\n   - NO barbell back squats.\n   - Prefer dumbbells, cables, machines, and bodyweight exercises.\n   - You may use barbells only for movements that do not violate the above (no heavy barbell bench or back squat).\n   - Use realistic exercises for a standard commercial gym.\n\n4. Goal:\n   - Primary goal is to BUILD MUSCLE (hypertrophy).\n   - Use mostly moderate rep ranges:\n     - 8-10 reps for big compound lifts\n     - 10–15 reps for isolation work\n   - Keep intensity high and heavy but sustainable across the week. \n\n5. Session length:\n   - \"duration_minutes\" must always be < 65.\n   - Assume ~60–90 seconds rest for big movements, ~45–75 seconds for isolation.\n\n--------------------------------\nOUTPUT FORMAT (IMPORTANT)\n--------------------------------\nReturn ONLY a JSON array (no extra text, no markdown, no explanation) in this shape:\n\n[\n  {\n    \"day\": \"Monday\",\n    \"focus\": \"Shoulders + Core (Hypertrophy)\",\n    \"duration_minutes\": 50,\n    \"notes\": \"Keep rest around 60–90 seconds and focus on controlled tempo.\",\n    \"exercises\": [\n      \"Seated dumbbell shoulder press – 4x8–10\",\n      \"Dumbbell lateral raises – 4x12–15\",\n      \"Cable face pulls – 4x12–15\",\n      \"Machine shoulder press – 4x10–12\",\n      \"Hanging leg raises – 4x10–15\",\n      \"Plank – 4x30–45 seconds\"\n    ]\n  }\n]\n\nRequirements:\n- Return EXACTLY 6 objects in the JSON array, one for each training day:\n  - Monday, Tuesday, Wednesday, Thursday, Friday, Sunday.\n- Each object MUST have:\n  - \"day\"\n  - \"focus\"\n  - \"duration_minutes\"\n  - \"exercises\" (array of 6-8 exercise strings)\n- \"notes\" is optional but recommended.\n\nDo NOT wrap the JSON in backticks.  \nDo NOT add any commentary before or after the JSON.  \nReturn ONLY the JSON array.\n",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2.2,
+      "position": [
+        -160,
+        384
+      ],
+      "id": "fc0ba0c6-e0a0-4ec1-bfad-c4ae00052398",
+      "name": "Workout Agent"
+    },
+    {
+      "parameters": {
+        "sessionIdType": "customKey",
+        "sessionKey": "workout_memory",
+        "contextWindowLength": 10
+      },
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.3,
+      "position": [
+        -32,
+        608
+      ],
+      "id": "4cdcfb50-3d00-4fb3-865e-7aace28f9243",
+      "name": "Workout Memory"
+    },
+    {
+      "parameters": {
+        "sessionIdType": "customKey",
+        "sessionKey": "meal_memory",
+        "contextWindowLength": 10
+      },
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.3,
+      "position": [
+        -32,
+        96
+      ],
+      "id": "5eb8caa5-4c86-43cd-baec-f2651d04b092",
+      "name": "Food Memory"
+    },
+    {
+      "parameters": {
+        "jsCode": "// 1. Get raw output from Workout Agent\nconst raw = $json.output || $json.text || '[]';\n\nlet days = [];\ntry {\n  days = JSON.parse(raw);\n} catch (e) {\n  days = [];\n}\n\n// 2. Basic HTML escape\nconst escapeHTML = (str) =>\n  String(str ?? '')\n    .replace(/&/g, '&amp;')\n    .replace(/</g, '&lt;')\n    .replace(/>/g, '&gt;')\n    .replace(/\"/g, '&quot;')\n    .replace(/'/g, '&#039;');\n\n// 3. Build workouts_html\nlet workouts_html = '<h2>🏋️ Weekly Workout Plan</h2>';\n\ndays.forEach(d => {\n  const day = escapeHTML(d.day || '');\n  const focus = escapeHTML(d.focus || '');\n  const duration = d.duration_minutes != null ? Number(d.duration_minutes) : null;\n  const notes = escapeHTML(d.notes || '');\n\n  if (!day) return;\n\n  workouts_html += `<b>${day}`;\n  if (focus) {\n    workouts_html += ` – ${focus}`;\n  }\n  workouts_html += '</b><br>';\n\n  if (duration && !Number.isNaN(duration)) {\n    workouts_html += `⏱️ ~${duration} min<br>`;\n  }\n\n  if (notes) {\n    workouts_html += `<i>${notes}</i><br>`;\n  }\n\n  if (Array.isArray(d.exercises) && d.exercises.length) {\n    workouts_html += '<ul>';\n    d.exercises.forEach(ex => {\n      workouts_html += `<li>${escapeHTML(ex)}</li>`;\n    });\n    workouts_html += '</ul>';\n  }\n\n  workouts_html += '<br>';\n});\n\n// 4. Return as a single item with workouts_html\nreturn [\n  {\n    json: {\n      workouts_html\n    }\n  }\n];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        192,
+        384
+      ],
+      "id": "bce81ed7-f04a-4572-ac1b-c5f66500d4a1",
+      "name": "Workout Code"
+    },
+    {
+      "parameters": {
+        "numberInputs": 3
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        416,
+        64
+      ],
+      "id": "96977db7-ec84-4ee2-8bd5-bd1b68ac7bc4",
+      "name": "Merge All 3"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Basic LLM Chain": {
+      "main": [
+        []
+      ]
+    },
+    "Food Trigger": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Workout Prefs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge": {
+      "main": [
+        []
+      ]
+    },
+    "Grocery List Code": {
+      "main": [
+        [
+          {
+            "node": "Merge All 3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send a message": {
+      "main": [
+        []
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Grocery List Code",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Meal Plan Summary2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Meal Plan Summary": {
+      "ai_tool": [
+        []
+      ]
+    },
+    "Grocery List Tool": {
+      "ai_tool": [
+        []
+      ]
+    },
+    "Meal Plan Summary2": {
+      "main": [
+        [
+          {
+            "node": "Merge All 3",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Build Email Payload": {
+      "main": [
+        [
+          {
+            "node": "Send a message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model1": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Workout Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Workout Prefs": {
+      "main": [
+        [
+          {
+            "node": "Workout Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Workout Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "Workout Agent",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Food Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Workout Agent": {
+      "main": [
+        [
+          {
+            "node": "Workout Code",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge All 3": {
+      "main": [
+        [
+          {
+            "node": "Build Email Payload",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Workout Code": {
+      "main": [
+        [
+          {
+            "node": "Merge All 3",
+            "type": "main",
+            "index": 2
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "d85ebebb-0675-49a4-8ac5-56ec68483f11",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "6e41c8966058236a06754795cf08085b57b4b86a6d09a5d4f2e583561418308b"
+  },
+  "id": "F9pdSU5lPnDZWxpo",
+  "tags": []
+}

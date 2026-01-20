@@ -1,0 +1,825 @@
+{
+  "name": "LLM Attribution Project",
+  "nodes": [
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        -320,
+        48
+      ],
+      "id": "9cccea5b-2a97-41e2-96c4-b7da0066003b",
+      "name": "Workflow Trigger"
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1zAtpfZnqxgjuycWaUnGzTbaOTjWyZgXbvbz0qf-M-kQ",
+          "mode": "list",
+          "cachedResultName": "LLM Attribution",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1zAtpfZnqxgjuycWaUnGzTbaOTjWyZgXbvbz0qf-M-kQ/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Financial Products",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1zAtpfZnqxgjuycWaUnGzTbaOTjWyZgXbvbz0qf-M-kQ/edit#gid=0"
+        },
+        "filtersUI": {
+          "values": [
+            {
+              "lookupColumn": "active",
+              "lookupValue": "={{ true }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        -96,
+        48
+      ],
+      "id": "3b9d250d-c0e6-444c-bdc6-cf50c271cdd7",
+      "name": "Get Initial Prompts",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "FBwaBF4NdPJxzqCu",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Run once for all items\n\nfunction truthy(v) {\n  if (typeof v === \"boolean\") return v;\n  const s = String(v ?? \"\").trim().toLowerCase();\n  return s === \"true\" || s === \"yes\" || s === \"y\" || s === \"1\";\n}\n\n// run_id shared across the whole run\nconst run_id = `run_${new Date().toISOString().replace(/[-:.TZ]/g, \"\").slice(0,14)}_${Math.floor(Math.random()*9000+1000)}`;\n\nconst out = [];\n\nfor (const it of $input.all()) {\n  const r = it.json;\n\n  // normalize column names in case Sheets returns slightly different keys\n  const prompt_id = r.prompt_id ?? r[\"prompt_id\"] ?? r[\"Prompt ID\"] ?? r[\"promptId\"];\n  const prompt_text = r.prompt_text ?? r[\"prompt_text\"] ?? r[\"Prompt Text\"] ?? r[\"prompt\"];\n  const active = r.active ?? r[\"active\"] ?? r[\"Active\"];\n\n  if (!truthy(active)) continue;\n  if (!prompt_id || !prompt_text) continue;\n\n  out.push({\n    json: {\n      run_id,\n      prompt_id: String(prompt_id).trim(),\n      prompt_text: String(prompt_text).trim(),\n      category: String(r.category ?? \"\").trim(),\n      product_type: String(r.product_type ?? \"\").trim(),\n    }\n  });\n}\n\nreturn out;\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        128,
+        48
+      ],
+      "id": "76b0782b-d3c4-401d-8c85-a90ba5b22ebb",
+      "name": "Filter For Active"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-4.1-mini"
+        },
+        "builtInTools": {},
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.3,
+      "position": [
+        656,
+        560
+      ],
+      "id": "5464b99a-fad0-4b03-bd82-c8fa20a9f0d2",
+      "name": "OpenAI Chat Model",
+      "credentials": {
+        "openAiApi": {
+          "id": "Hd5NQstAQvUarYm0",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "claude-sonnet-4-5-20250929",
+          "cachedResultName": "Claude Sonnet 4.5"
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatAnthropic",
+      "typeVersion": 1.3,
+      "position": [
+        592,
+        -32
+      ],
+      "id": "2531ee00-d440-448d-a1dc-a4f699a09039",
+      "name": "Anthropic Chat Model",
+      "credentials": {
+        "anthropicApi": {
+          "id": "ECEQqW6jzyIslkgc",
+          "name": "Anthropic account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Run metadata:\nrun_id: {{$json.run_id}}\nprompt_id: {{$json.prompt_id}}\ncategory: {{$json.category}}\nproduct_type: {{$json.product_type}}\n\nUser prompt:\n{{$json.prompt_text}}\n",
+        "hasOutputParser": true,
+        "messages": {
+          "messageValues": [
+            {
+              "message": "You are Chain 1: LLM Response Generation for an AEO attribution system.  You MUST return ONLY valid JSON. Do NOT include markdown, commentary, or extra text.  Your task: 1) Answer the user prompt fully and clearly in \"answer_text\". 2) Do NOT compare models. 3) Do NOT optimize, rank, or score. 4) Do NOT mention this system or AEO. 5) After answering, extract metadata from your own answer.  Extraction rules: - products_mentioned: financial product concepts mentioned (e.g., \"high-yield savings account\", \"index fund ETF\", \"Roth IRA\") - providers_mentioned: company or provider names mentioned (e.g., Vanguard, Fidelity) - product_types_mentioned: ETF, HYSA, brokerage, robo-advisor, etc. - risk_framing: low | medium | high | mixed | unspecified - time_horizon: short | medium | long | unspecified - disclaimer_present: true if any cautionary language appears - recommendation_strength: direct | neutral | vague  If unknown, use empty arrays or \"unspecified\".  Return JSON ONLY using the exact schema below and set model=\"claude\"."
+            }
+          ]
+        },
+        "batching": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.7,
+      "position": [
+        576,
+        -256
+      ],
+      "id": "84642cd4-f48a-4ae0-bace-519aed6279d9",
+      "name": "Claude Chain"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Return JSON with this exact shape:\n\n{\n  \"model\": \"claude\",\n  \"run_id\": \"{{$json.run_id}}\",\n  \"prompt_id\": \"{{$json.prompt_id}}\",\n  \"category\": \"{{$json.category}}\",\n  \"product_type\": \"{{$json.product_type}}\",\n  \"prompt_text\": \"{{$json.prompt_text}}\",\n  \"answer_text\": \"\",\n  \"products_mentioned\": [],\n  \"providers_mentioned\": [],\n  \"product_types_mentioned\": [],\n  \"risk_framing\": \"unspecified\",\n  \"time_horizon\": \"unspecified\",\n  \"disclaimer_present\": false,\n  \"recommendation_strength\": \"neutral\"\n}\n\nNow answer this prompt:\n{{$json.prompt_text}}\n\n",
+        "hasOutputParser": true,
+        "messages": {
+          "messageValues": [
+            {
+              "message": "You are Chain 1: LLM Response Generation for an AEO attribution system.  Rules: - Answer the user's prompt normally (helpful, clear). - Do not compare models. - Do not mention this pipeline. - Output MUST be valid JSON only. No markdown, no backticks, no extra text. - Always include all keys even if empty. - Arrays must be arrays (not strings)."
+            }
+          ]
+        },
+        "batching": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.7,
+      "position": [
+        576,
+        336
+      ],
+      "id": "0dd4a86e-d4af-43fd-8b69-e4b5e54602ce",
+      "name": "GPT Chain"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        1376,
+        48
+      ],
+      "id": "27e86efb-55c2-4f32-923b-6fba32f8601c",
+      "name": "Merge"
+    },
+    {
+      "parameters": {
+        "schemaType": "manual",
+        "inputSchema": "{\n  \"model\": \"gpt\",\n  \"run_id\": \"\",\n  \"prompt_id\": \"\",\n  \"category\": \"\",\n  \"product_type\": \"\",\n  \"prompt_text\": \"\",\n  \"answer_text\": \"\",\n  \"products_mentioned\": [],\n  \"providers_mentioned\": [],\n  \"product_types_mentioned\": [],\n  \"risk_framing\": \"unspecified\",\n  \"time_horizon\": \"unspecified\",\n  \"disclaimer_present\": false,\n  \"recommendation_strength\": \"neutral\"\n}\n"
+      },
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.3,
+      "position": [
+        720,
+        -32
+      ],
+      "id": "a10665d3-831f-44e1-962d-f2d402dcf3c7",
+      "name": "Structured Output Parser1"
+    },
+    {
+      "parameters": {
+        "jsCode": "const grouped = {};\n\nfor (const item of items) {\n  const r = item.json || {};\n  const pid = r.prompt_id || r.promptId || r.id;\n\n  if (!pid) continue;\n\n  if (!grouped[pid]) {\n    grouped[pid] = {\n      timestamp: new Date().toISOString(),\n\n      // metadata (take from whichever arrives first)\n      run_id: r.run_id ?? \"\",\n      prompt_id: r.prompt_id ?? \"\",\n      category: r.category ?? \"\",\n      product_type: r.product_type ?? \"\",\n      prompt_text: r.prompt_text ?? \"\",\n\n      // GPT fields\n      gpt_answer_text: \"\",\n      gpt_products_mentioned: \"\",\n      gpt_providers_mentioned: \"\",\n      gpt_product_types_mentioned: \"\",\n      gpt_risk_framing: \"\",\n      gpt_time_horizon: \"\",\n      gpt_disclaimer_present: \"\",\n      gpt_recommendation_strength: \"\",\n      gpt_raw_json: \"\",\n\n      // Claude fields\n      claude_answer_text: \"\",\n      claude_products_mentioned: \"\",\n      claude_providers_mentioned: \"\",\n      claude_product_types_mentioned: \"\",\n      claude_risk_framing: \"\",\n      claude_time_horizon: \"\",\n      claude_disclaimer_present: \"\",\n      claude_recommendation_strength: \"\",\n      claude_raw_json: \"\",\n    };\n  }\n\n  // If metadata was blank on first item, allow later item to fill it in\n  grouped[pid].run_id = grouped[pid].run_id || (r.run_id ?? \"\");\n  grouped[pid].category = grouped[pid].category || (r.category ?? \"\");\n  grouped[pid].product_type = grouped[pid].product_type || (r.product_type ?? \"\");\n  grouped[pid].prompt_text = grouped[pid].prompt_text || (r.prompt_text ?? \"\");\n\n  const model = String(r.model ?? \"\").toLowerCase();\n\n  // helpers (Sheets wants strings)\n  const joinArr = (v) => Array.isArray(v) ? v.join(\", \") : (v ?? \"\");\n  const boolToStr = (v) =>\n    typeof v === \"boolean\" ? (v ? \"true\" : \"false\") : (v ?? \"\");\n\n  if (model === \"gpt\") {\n    grouped[pid].gpt_answer_text = r.answer_text ?? \"\";\n    grouped[pid].gpt_products_mentioned = joinArr(r.products_mentioned);\n    grouped[pid].gpt_providers_mentioned = joinArr(r.providers_mentioned);\n    grouped[pid].gpt_product_types_mentioned = joinArr(r.product_types_mentioned);\n    grouped[pid].gpt_risk_framing = r.risk_framing ?? \"\";\n    grouped[pid].gpt_time_horizon = r.time_horizon ?? \"\";\n    grouped[pid].gpt_disclaimer_present = boolToStr(r.disclaimer_present);\n    grouped[pid].gpt_recommendation_strength = r.recommendation_strength ?? \"\";\n    grouped[pid].gpt_raw_json = r.gpt_raw_json ?? JSON.stringify(r);\n  }\n\n  if (model === \"claude\") {\n    grouped[pid].claude_answer_text = r.answer_text ?? \"\";\n    grouped[pid].claude_products_mentioned = joinArr(r.products_mentioned);\n    grouped[pid].claude_providers_mentioned = joinArr(r.providers_mentioned);\n    grouped[pid].claude_product_types_mentioned = joinArr(r.product_types_mentioned);\n    grouped[pid].claude_risk_framing = r.risk_framing ?? \"\";\n    grouped[pid].claude_time_horizon = r.time_horizon ?? \"\";\n    grouped[pid].claude_disclaimer_present = boolToStr(r.disclaimer_present);\n    grouped[pid].claude_recommendation_strength = r.recommendation_strength ?? \"\";\n    grouped[pid].claude_raw_json = r.claude_raw_json ?? JSON.stringify(r);\n  }\n}\n\nreturn Object.values(grouped).map(row => ({ json: row }));\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1600,
+        48
+      ],
+      "id": "69912a32-5618-4554-9ef8-992e0cb00591",
+      "name": "Code for Merge"
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1zAtpfZnqxgjuycWaUnGzTbaOTjWyZgXbvbz0qf-M-kQ",
+          "mode": "list",
+          "cachedResultName": "LLM Attribution",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1zAtpfZnqxgjuycWaUnGzTbaOTjWyZgXbvbz0qf-M-kQ/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 1844917642,
+          "mode": "list",
+          "cachedResultName": "LLM_Outputs_Log",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1zAtpfZnqxgjuycWaUnGzTbaOTjWyZgXbvbz0qf-M-kQ/edit#gid=1844917642"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "timestamp": "={{ $json.timestamp}}",
+            "run_id": "={{ $json.run_id }}",
+            "prompt_id": "={{ $json.prompt_id }}",
+            "category": "={{ $json.category }}",
+            "product_type": "={{ $json.product_type }}",
+            "prompt_text": "={{ $json.prompt_text }}",
+            "gpt_answer_text": "={{ $json.gpt_answer_text }}",
+            "claude_answer_text": "={{ $json.claude_answer_text }}",
+            "gpt_products_mentioned": "={{ $json.gpt_products_mentioned }}",
+            "claude_products_mentioned": "={{ $json.claude_products_mentioned }}",
+            "gpt_product_types_mentioned": "={{ $json.gpt_product_types_mentioned }}",
+            "claude_product_types_mentioned": "={{ $json.claude_product_types_mentioned }}",
+            "gpt_risk_framing": "={{ $json.gpt_risk_framing }}",
+            "claude_risk_framing": "={{ $json.claude_risk_framing }}",
+            "gpt_disclaimer_present": "={{ $json.gpt_disclaimer_present }}",
+            "claude_disclaimer_present": "={{ $json.claude_disclaimer_present }}",
+            "gpt_recommendation_strength": "={{ $json.gpt_recommendation_strength }}",
+            "claude_recommendation_strength": "={{ $json.claude_recommendation_strength }}",
+            "gpt_raw_json": "={{ $json.gpt_raw_json }}",
+            "claude_raw_json": "={{ $json.claude_raw_json }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "timestamp",
+              "displayName": "timestamp",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "run_id",
+              "displayName": "run_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "prompt_id",
+              "displayName": "prompt_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "category",
+              "displayName": "category",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "product_type",
+              "displayName": "product_type",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "prompt_text",
+              "displayName": "prompt_text",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "gpt_answer_text",
+              "displayName": "gpt_answer_text",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "claude_answer_text",
+              "displayName": "claude_answer_text",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "gpt_products_mentioned",
+              "displayName": "gpt_products_mentioned",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "claude_products_mentioned",
+              "displayName": "claude_products_mentioned",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "gpt_product_types_mentioned",
+              "displayName": "gpt_product_types_mentioned",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "claude_product_types_mentioned",
+              "displayName": "claude_product_types_mentioned",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "gpt_risk_framing",
+              "displayName": "gpt_risk_framing",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "claude_risk_framing",
+              "displayName": "claude_risk_framing",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "gpt_disclaimer_present",
+              "displayName": "gpt_disclaimer_present",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "claude_disclaimer_present",
+              "displayName": "claude_disclaimer_present",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "gpt_recommendation_strength",
+              "displayName": "gpt_recommendation_strength",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "claude_recommendation_strength",
+              "displayName": "claude_recommendation_strength",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "gpt_raw_json",
+              "displayName": "gpt_raw_json",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "claude_raw_json",
+              "displayName": "claude_raw_json",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        1824,
+        -64
+      ],
+      "id": "49927dbf-ce31-4181-affa-59d3f6ad9506",
+      "name": "Append LLM Outputs Log",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "FBwaBF4NdPJxzqCu",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "// merged item contains metadata fields at top level,\n// and GPT output usually in $json.text (string JSON)\n\nfunction safeParse(x) {\n  if (typeof x !== \"string\") return x;\n  try { return JSON.parse(x); } catch(e) { return null; }\n}\n\n// 1) Find the raw model payload\nconst raw =\n  $json.text ??\n  $json.output ??\n  $json.response ??\n  $json.message ??\n  null;\n\nlet r = safeParse(raw);\n\n// If it's still not parsed, last try: sometimes output is already an object\nif (!r && typeof raw === \"object\" && raw) r = raw;\n\n// If parsing failed, keep diagnostics\nif (!r) {\n  return {\n    ...$json,\n    model: \"gpt\",\n    answer_text: String(raw ?? \"\"),\n    _parse_error: true\n  };\n}\n\n// 2) Return a clean normalized record\nreturn {\n  run_id: $json.run_id ?? r.run_id ?? \"\",\n  prompt_id: $json.prompt_id ?? r.prompt_id ?? \"\",\n  prompt_text: $json.prompt_text ?? r.prompt_text ?? \"\",\n  category: $json.category ?? r.category ?? \"\",\n  product_type: $json.product_type ?? r.product_type ?? \"\",\n\n  model: \"gpt\",\n  answer_text: r.answer_text ?? \"\",\n  products_mentioned: r.products_mentioned ?? [],\n  providers_mentioned: r.providers_mentioned ?? [],\n  product_types_mentioned: r.product_types_mentioned ?? [],\n  risk_framing: r.risk_framing ?? \"unspecified\",\n  time_horizon: r.time_horizon ?? \"unspecified\",\n  disclaimer_present: r.disclaimer_present ?? false,\n  recommendation_strength: r.recommendation_strength ?? \"neutral\",\n\n  gpt_raw_json: JSON.stringify(r)\n};\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1152,
+        224
+      ],
+      "id": "7af36541-6c0f-4c1a-aca3-55b6053e79e8",
+      "name": "Metadata Code GPT"
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const meta = $json;\nconst r = $json.output ?? {};\n\nreturn {\n  run_id: meta.run_id ?? \"\",\n  prompt_id: meta.prompt_id ?? \"\",\n  prompt_text: meta.prompt_text ?? \"\",\n  category: meta.category ?? \"\",\n  product_type: meta.product_type ?? \"\",\n\n  model: \"claude\",\n  answer_text: r.answer_text ?? \"\",\n  products_mentioned: r.products_mentioned ?? [],\n  providers_mentioned: r.providers_mentioned ?? [],\n  product_types_mentioned: r.product_types_mentioned ?? [],\n  risk_framing: r.risk_framing ?? \"unspecified\",\n  time_horizon: r.time_horizon ?? \"unspecified\",\n  disclaimer_present: r.disclaimer_present ?? false,\n  recommendation_strength: r.recommendation_strength ?? \"neutral\"\n};\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1152,
+        -128
+      ],
+      "id": "0caaf505-438e-4bc4-9f94-5f524d6269d5",
+      "name": "Metadata Code Claude"
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "return {\n  run_id: $json.run_id,\n  prompt_id: $json.prompt_id,\n  prompt_text: $json.prompt_text,\n  category: $json.category,\n  product_type: $json.product_type\n};\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        352,
+        48
+      ],
+      "id": "7705554e-84c8-4239-92b5-07dc73290fcd",
+      "name": "Pass Through Metadata"
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "combineBy": "combineByPosition",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        928,
+        224
+      ],
+      "id": "844e50e4-cdad-40f9-add1-c3ef8ed1777a",
+      "name": "GPT Merge"
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "combineBy": "combineByPosition",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        928,
+        -128
+      ],
+      "id": "47b9fd60-eda4-46b0-a28c-a1e24e290be6",
+      "name": "Claude Merge"
+    },
+    {
+      "parameters": {
+        "mode": "insert",
+        "pineconeIndex": {
+          "__rl": true,
+          "value": "n8nvectorfirstproject",
+          "mode": "list",
+          "cachedResultName": "n8nvectorfirstproject"
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.vectorStorePinecone",
+      "typeVersion": 1.3,
+      "position": [
+        2048,
+        144
+      ],
+      "id": "eef302c2-6a63-49ad-81fa-ef0277e3e1ce",
+      "name": "Pinecone Vector Store",
+      "credentials": {
+        "pineconeApi": {
+          "id": "5USGSKskFPhBQJZ3",
+          "name": "PineconeApi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {
+          "dimensions": 1536
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.embeddingsOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        2064,
+        368
+      ],
+      "id": "b5503518-7b1a-4026-aebb-ae1b7459f914",
+      "name": "Embeddings OpenAI",
+      "credentials": {
+        "openAiApi": {
+          "id": "Hd5NQstAQvUarYm0",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.documentDefaultDataLoader",
+      "typeVersion": 1.1,
+      "position": [
+        2192,
+        368
+      ],
+      "id": "f704c6e1-9775-42e3-a378-86b304784977",
+      "name": "Default Data Loader"
+    },
+    {
+      "parameters": {
+        "jsCode": "/**\n * Minimal, safe Pinecone prep:\n * - Keep text clean\n * - Add a simple run_id + category for easy proof later\n * - Do NOT restructure n8n's internal metadata object\n */\n\nfunction s(v) {\n  if (v === undefined || v === null) return \"\";\n  return String(v);\n}\n\nreturn items.map((item, idx) => {\n  const j = item.json || {};\n\n  const runId = s(j.run_id || j.runId || \"run_demo\");\n  const category = s(j.category || \"demo\");\n\n  // Build a reasonable text payload\n  const prompt = s(j.prompt_text);\n  const gpt = s(j.gpt_answer_text);\n  const claude = s(j.claude_answer_text);\n\n  const text =\n    s(j.text) ||\n    [prompt && `PROMPT: ${prompt}`, gpt && `GPT: ${gpt}`, claude && `CLAUDE: ${claude}`]\n      .filter(Boolean)\n      .join(\"\\n\\n\");\n\n  // Keep ID stable-ish so reruns don't explode duplicates\n  const id = s(j.id) || `${runId}__${category}__${idx}`;\n\n  // Add tiny fields that won't break anything\n  return {\n    json: {\n      ...j,\n      id,\n      text,\n      run_id: runId,\n      category\n    }\n  };\n});\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1824,
+        144
+      ],
+      "id": "455aa6bb-bba0-4d2e-a77c-ad055fa84188",
+      "name": "Load Metadata/Run ID for Pinecone"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Workflow Trigger": {
+      "main": [
+        [
+          {
+            "node": "Get Initial Prompts",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Initial Prompts": {
+      "main": [
+        [
+          {
+            "node": "Filter For Active",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filter For Active": {
+      "main": [
+        [
+          {
+            "node": "Pass Through Metadata",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "GPT Chain",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Anthropic Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Claude Chain",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "GPT Chain": {
+      "main": [
+        [
+          {
+            "node": "GPT Merge",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Claude Chain": {
+      "main": [
+        [
+          {
+            "node": "Claude Merge",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Structured Output Parser1": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "Claude Chain",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge": {
+      "main": [
+        [
+          {
+            "node": "Code for Merge",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code for Merge": {
+      "main": [
+        [
+          {
+            "node": "Append LLM Outputs Log",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Load Metadata/Run ID for Pinecone",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Metadata Code Claude": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Metadata Code GPT": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Pass Through Metadata": {
+      "main": [
+        [
+          {
+            "node": "Claude Chain",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "GPT Chain",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "GPT Merge",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Claude Merge",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "GPT Merge": {
+      "main": [
+        [
+          {
+            "node": "Metadata Code GPT",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Claude Merge": {
+      "main": [
+        [
+          {
+            "node": "Metadata Code Claude",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Embeddings OpenAI": {
+      "ai_embedding": [
+        [
+          {
+            "node": "Pinecone Vector Store",
+            "type": "ai_embedding",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Default Data Loader": {
+      "ai_document": [
+        [
+          {
+            "node": "Pinecone Vector Store",
+            "type": "ai_document",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Load Metadata/Run ID for Pinecone": {
+      "main": [
+        [
+          {
+            "node": "Pinecone Vector Store",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "5d44a222-ca6f-4137-8786-d04057dddde3",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "6e41c8966058236a06754795cf08085b57b4b86a6d09a5d4f2e583561418308b"
+  },
+  "id": "YQ8FpjjP0usmebYU",
+  "tags": []
+}

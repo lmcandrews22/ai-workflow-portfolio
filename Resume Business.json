@@ -1,0 +1,2068 @@
+{
+  "name": "Resume Business",
+  "nodes": [
+    {
+      "parameters": {
+        "mode": "expression",
+        "numberOutputs": 6,
+        "output": "={{\n  $json[\"Industry / Field (Our AI Agents are Industry Specific)\"] === \"Technology / IT\" ? 0 :\n  $json[\"Industry / Field (Our AI Agents are Industry Specific)\"] === \"Finance / Banking\" ? 1 :\n  $json[\"Industry / Field (Our AI Agents are Industry Specific)\"] === \"Marketing / Advertising\" ? 2 :\n  $json[\"Industry / Field (Our AI Agents are Industry Specific)\"] === \"Healthcare\" ? 3 :\n  $json[\"Industry / Field (Our AI Agents are Industry Specific)\"] === \"Education\" ? 4 :\n  5\n}}\n"
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [
+        -2160,
+        48
+      ],
+      "id": "55855cac-cc02-443a-8d9e-45bec8a52592",
+      "name": "Switch",
+      "alwaysOutputData": false
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ `You are a professional resume writer specializing in Finance and Banking careers. Craft a data-driven, metrics-focused, and ATS-optimized resume that emphasizes analysis, strategy, compliance, and business growth.\n\nHere is the client’s submitted information:\n\nFull Name: ${$json[\"Full Name\"] || \"\"}\nEmail Address: ${$json[\"Email Address\"] || \"\"}\nPhone Number: ${$json[\"Phone Number\"] || \"\"}\nLinkedIn URL: ${$json[\"LinkedIn URL\"] || \"\"}\nPortfolio or Website: ${$json[\"Portfolio or Website\"] || \"\"}\nDo you currently have a resume?: ${$json[\"Do you currently have a resume?\"] || \"\"}\nUploaded Resume Link: ${$json[\"Please upload your resume ( PDF or Word Format)\"] || \"\"}\nIndustry / Field: ${$json[\"Industry / Field (Our AI Agents are Industry Specific)\"] || \"\"}\nWould you like to add or update any roles, responsibilities, or experience?: ${$json[\"Would you like to add or update any roles, responsibilities, or experience?\"] || \"\"}\nAre there any specific achievements, projects, or measurable results you'd like highlighted?: ${$json[\"Are there any specific achievements, projects, or measurable results you'd like highlighted?\"] || \"\"}\nWould you like it: ${$json[\"Would you like it:\"] || \"\"}\nCurrent or Most Recent Job Title: ${$json[\"Current or Most Recent Job Title\"] || \"\"}\nCompany Name: ${$json[\"Company Name\"] || \"\"}\nTarget Job Title (What role are you applying for?): ${$json[\"Target Job Title (What role are you applying for?)\"] || \"\"}\nYears of Experience: ${$json[\"Years of Experience\"] || \"\"}\nOld Industry / Field: ${$json[\"OLD Industry / Field (Our AI Agents are Industry Specific)\"] || \"\"}\nCareer Stage: ${$json[\"Career Stage\"] || \"\"}\nTop Skills or Tools: ${$json[\"List your top skills or tools (comma-separated)\"] || \"\"}\nTop Achievements or Responsibilities: ${$json[\"Describe your top achievements or responsibilities\"] || \"\"}\nEducation / Certifications: ${$json[\"Education / Certifications\"] || \"\"}\nPreferred Resume Style: ${$json[\"Preferred Resume Style\"] || \"\"}\nTone Preference: ${$json[\"Tone Preference\"] || \"\"}\nAdditional Notes or Preferences: ${$json[\"Additional Notes or Preferences (Anything specific you want included?)\"] || \"\"}\n\n---\n\nUsing the information above, write a sharp, quantifiable finance resume focused on business impact, analysis, cost control, and growth. Include strong metrics, professional language, and ATS-friendly formatting tailored to finance and banking roles.` }}\n",
+        "batching": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.7,
+      "position": [
+        -1936,
+        1120
+      ],
+      "id": "46990e3d-89b8-4709-bd12-5ce06eb45e0f",
+      "name": "Finance"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ `\nYou are a professional resume writer specializing in Marketing and Advertising careers.\nCreate a creative, metrics-driven, and ATS-optimized resume that highlights branding impact, campaign success, and strategic storytelling.\n\nThe client may have uploaded a previous resume. Review it for phrasing or structure if available:\n${$json[\"Please upload your resume ( PDF or Word Format)\"] || \"https://drive.google.com/drive/folders/1NiqfTXaGrZwNgkFliirpbMWF8Tp3bO8u4mIDuRYmjrgsS6xVkfeLRzbFTadTsDMfzLRAU__q\"}\n\nFull Name: ${$json[\"Full Name\"] || \"\"}\nEmail: ${$json[\"Email Address\"] || \"\"}\nLinkedIn: ${$json[\"LinkedIn URL\"] || \"\"}\nPhone: ${$json[\"Phone Number\"] || \"\"}\nTarget Role: ${$json[\"Target Job Title (What role are you applying for?)\"] || \"\"}\nYears of Experience: ${$json[\"Years of Experience\"] || \"\"}\nAchievements: ${$json[\"Describe your top achievements or responsibilities\"] || \"\"}\nAdditional Notes: ${$json[\"Additional Notes or Preferences (Anything specific you want included?)\"] || \"\"}\n\nUsing this data, craft a polished marketing resume emphasizing storytelling, ROI, and creative leadership.` }}\n\n",
+        "batching": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.7,
+      "position": [
+        -1936,
+        608
+      ],
+      "id": "6e96f530-48c5-4ddc-8875-004d7cc82f1b",
+      "name": "Marketing"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-4.1-mini"
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        -1872,
+        1344
+      ],
+      "id": "5837b9fa-9205-4cfa-a292-dcc594bec680",
+      "name": "Finance Agent",
+      "credentials": {
+        "openAiApi": {
+          "id": "G3tFjZ0hwskFiRey",
+          "name": "n8n free OpenAI API credits"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-4.1-mini"
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        -1872,
+        832
+      ],
+      "id": "6f7abb79-7471-45bd-98a8-5993f4587b2e",
+      "name": "Marketing Agent",
+      "credentials": {
+        "openAiApi": {
+          "id": "G3tFjZ0hwskFiRey",
+          "name": "n8n free OpenAI API credits"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ `You are a professional resume writer specializing in Healthcare and Medical careers. Craft a clear, compliant, and compassionate resume emphasizing clinical experience, patient outcomes, and leadership in care delivery.\n\nHere is the client’s submitted information:\n\nFull Name: ${$json[\"Full Name\"] || \"\"}\nEmail Address: ${$json[\"Email Address\"] || \"\"}\nPhone Number: ${$json[\"Phone Number\"] || \"\"}\nLinkedIn URL: ${$json[\"LinkedIn URL\"] || \"\"}\nPortfolio or Website: ${$json[\"Portfolio or Website\"] || \"\"}\nDo you currently have a resume?: ${$json[\"Do you currently have a resume?\"] || \"\"}\nUploaded Resume Link: ${$json[\"Please upload your resume ( PDF or Word Format)\"] || \"\"}\nIndustry / Field: ${$json[\"Industry / Field (Our AI Agents are Industry Specific)\"] || \"\"}\nWould you like to add or update any roles, responsibilities, or experience?: ${$json[\"Would you like to add or update any roles, responsibilities, or experience?\"] || \"\"}\nAre there any specific achievements, projects, or measurable results you'd like highlighted?: ${$json[\"Are there any specific achievements, projects, or measurable results you'd like highlighted?\"] || \"\"}\nWould you like it: ${$json[\"Would you like it:\"] || \"\"}\nCurrent or Most Recent Job Title: ${$json[\"Current or Most Recent Job Title\"] || \"\"}\nCompany Name: ${$json[\"Company Name\"] || \"\"}\nTarget Job Title (What role are you applying for?): ${$json[\"Target Job Title (What role are you applying for?)\"] || \"\"}\nYears of Experience: ${$json[\"Years of Experience\"] || \"\"}\nOld Industry / Field: ${$json[\"OLD Industry / Field (Our AI Agents are Industry Specific)\"] || \"\"}\nCareer Stage: ${$json[\"Career Stage\"] || \"\"}\nTop Skills or Tools: ${$json[\"List your top skills or tools (comma-separated)\"] || \"\"}\nTop Achievements or Responsibilities: ${$json[\"Describe your top achievements or responsibilities\"] || \"\"}\nEducation / Certifications: ${$json[\"Education / Certifications\"] || \"\"}\nPreferred Resume Style: ${$json[\"Preferred Resume Style\"] || \"\"}\nTone Preference: ${$json[\"Tone Preference\"] || \"\"}\nAdditional Notes or Preferences: ${$json[\"Additional Notes or Preferences (Anything specific you want included?)\"] || \"\"}\n\n---\n\nUsing the information above, write a professional healthcare resume focused on patient care, compliance, collaboration, and clinical impact. Highlight outcomes, certifications, and any leadership or process improvement experience.` }}\n",
+        "batching": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.7,
+      "position": [
+        -1936,
+        208
+      ],
+      "id": "51d750f0-65e2-405f-b325-c38762721e7d",
+      "name": "Healthcare"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-4.1-mini"
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        -1872,
+        432
+      ],
+      "id": "75b5e428-f933-4525-88b0-d8e7b7659a1a",
+      "name": "Healthcare Agent",
+      "credentials": {
+        "openAiApi": {
+          "id": "G3tFjZ0hwskFiRey",
+          "name": "n8n free OpenAI API credits"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ `You are a professional resume writer specializing in Education and Academic careers. Create an engaging, structured, and ATS-friendly resume that highlights teaching effectiveness, curriculum development, and student impact.\n\nHere is the client’s submitted information:\n\nFull Name: ${$json[\"Full Name\"] || \"\"}\nEmail Address: ${$json[\"Email Address\"] || \"\"}\nPhone Number: ${$json[\"Phone Number\"] || \"\"}\nLinkedIn URL: ${$json[\"LinkedIn URL\"] || \"\"}\nPortfolio or Website: ${$json[\"Portfolio or Website\"] || \"\"}\nDo you currently have a resume?: ${$json[\"Do you currently have a resume?\"] || \"\"}\nUploaded Resume Link: ${$json[\"Please upload your resume ( PDF or Word Format)\"] || \"\"}\nIndustry / Field: ${$json[\"Industry / Field (Our AI Agents are Industry Specific)\"] || \"\"}\nWould you like to add or update any roles, responsibilities, or experience?: ${$json[\"Would you like to add or update any roles, responsibilities, or experience?\"] || \"\"}\nAre there any specific achievements, projects, or measurable results you'd like highlighted?: ${$json[\"Are there any specific achievements, projects, or measurable results you'd like highlighted?\"] || \"\"}\nWould you like it: ${$json[\"Would you like it:\"] || \"\"}\nCurrent or Most Recent Job Title: ${$json[\"Current or Most Recent Job Title\"] || \"\"}\nCompany Name: ${$json[\"Company Name\"] || \"\"}\nTarget Job Title (What role are you applying for?): ${$json[\"Target Job Title (What role are you applying for?)\"] || \"\"}\nYears of Experience: ${$json[\"Years of Experience\"] || \"\"}\nOld Industry / Field: ${$json[\"OLD Industry / Field (Our AI Agents are Industry Specific)\"] || \"\"}\nCareer Stage: ${$json[\"Career Stage\"] || \"\"}\nTop Skills or Tools: ${$json[\"List your top skills or tools (comma-separated)\"] || \"\"}\nTop Achievements or Responsibilities: ${$json[\"Describe your top achievements or responsibilities\"] || \"\"}\nEducation / Certifications: ${$json[\"Education / Certifications\"] || \"\"}\nPreferred Resume Style: ${$json[\"Preferred Resume Style\"] || \"\"}\nTone Preference: ${$json[\"Tone Preference\"] || \"\"}\nAdditional Notes or Preferences: ${$json[\"Additional Notes or Preferences (Anything specific you want included?)\"] || \"\"}\n\n---\n\nUsing the information above, craft a compelling education résumé focused on teaching experience, student outcomes, leadership, and professional development. Maintain clarity, structure, and a formal tone optimized for academic and school hiring systems.` }}\n\n",
+        "batching": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.7,
+      "position": [
+        -1936,
+        -592
+      ],
+      "id": "17932696-a5c6-481a-9f97-54c0d9767fd9",
+      "name": "Education"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-4.1-mini"
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        -1872,
+        -368
+      ],
+      "id": "4d8330c0-a9d4-4291-99b7-1f6001f6e2d6",
+      "name": "Education Agent",
+      "credentials": {
+        "openAiApi": {
+          "id": "G3tFjZ0hwskFiRey",
+          "name": "n8n free OpenAI API credits"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ `You are a professional resume writer specializing in creating adaptable, general-purpose, ATS-friendly resumes. Craft a balanced and professional resume suitable for multiple industries.\n\nHere is the client’s submitted information:\n\nFull Name: ${$json[\"Full Name\"] || \"\"}\nEmail Address: ${$json[\"Email Address\"] || \"\"}\nPhone Number: ${$json[\"Phone Number\"] || \"\"}\nLinkedIn URL: ${$json[\"LinkedIn URL\"] || \"\"}\nPortfolio or Website: ${$json[\"Portfolio or Website\"] || \"\"}\nDo you currently have a resume?: ${$json[\"Do you currently have a resume?\"] || \"\"}\nUploaded Resume Link: ${$json[\"Please upload your resume ( PDF or Word Format)\"] || \"\"}\nIndustry / Field: ${$json[\"Industry / Field (Our AI Agents are Industry Specific)\"] || \"\"}\nWould you like to add or update any roles, responsibilities, or experience?: ${$json[\"Would you like to add or update any roles, responsibilities, or experience?\"] || \"\"}\nAre there any specific achievements, projects, or measurable results you'd like highlighted?: ${$json[\"Are there any specific achievements, projects, or measurable results you'd like highlighted?\"] || \"\"}\nWould you like it: ${$json[\"Would you like it:\"] || \"\"}\nCurrent or Most Recent Job Title: ${$json[\"Current or Most Recent Job Title\"] || \"\"}\nCompany Name: ${$json[\"Company Name\"] || \"\"}\nTarget Job Title (What role are you applying for?): ${$json[\"Target Job Title (What role are you applying for?)\"] || \"\"}\nYears of Experience: ${$json[\"Years of Experience\"] || \"\"}\nOld Industry / Field: ${$json[\"OLD Industry / Field (Our AI Agents are Industry Specific)\"] || \"\"}\nCareer Stage: ${$json[\"Career Stage\"] || \"\"}\nTop Skills or Tools: ${$json[\"List your top skills or tools (comma-separated)\"] || \"\"}\nTop Achievements or Responsibilities: ${$json[\"Describe your top achievements or responsibilities\"] || \"\"}\nEducation / Certifications: ${$json[\"Education / Certifications\"] || \"\"}\nPreferred Resume Style: ${$json[\"Preferred Resume Style\"] || \"\"}\nTone Preference: ${$json[\"Tone Preference\"] || \"\"}\nAdditional Notes or Preferences: ${$json[\"Additional Notes or Preferences (Anything specific you want included?)\"] || \"\"}\n\n---\n\nUsing the information above, write a professional, well-rounded resume emphasizing transferable skills, professional tone, and ATS compatibility. Keep it flexible and suitable for a variety of career paths.` }}\n",
+        "batching": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.7,
+      "position": [
+        -1936,
+        -992
+      ],
+      "id": "a989ce38-a7b2-4fc7-be31-1fbbf30edc19",
+      "name": "Other"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-4.1-mini"
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        -1872,
+        -768
+      ],
+      "id": "077a6363-996c-4a2e-a1ed-261a77cc2cf6",
+      "name": "Other Agent",
+      "credentials": {
+        "openAiApi": {
+          "id": "G3tFjZ0hwskFiRey",
+          "name": "n8n free OpenAI API credits"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "numberInputs": 6
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        -1584,
+        128
+      ],
+      "id": "6beb7b96-baa9-41ce-bc10-302e38eb907b",
+      "name": "Merge"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ `You are a professional resume writer specializing in Technology and IT careers. Craft a concise, ATS-optimized, and achievement-driven resume that highlights technical expertise, project delivery, and innovation.\n\nHere is the client’s submitted information:\n\nFull Name: ${$json[\"Full Name\"] || \"\"}\nEmail Address: ${$json[\"Email Address\"] || \"\"}\nPhone Number: ${$json[\"Phone Number\"] || \"\"}\nLinkedIn URL: ${$json[\"LinkedIn URL\"] || \"\"}\nPortfolio or Website: ${$json[\"Portfolio or Website\"] || \"\"}\nDo you currently have a resume?: ${$json[\"Do you currently have a resume?\"] || \"\"}\nUploaded Resume Link: ${$json[\"Please upload your resume ( PDF or Word Format)\"] || \"\"}\nIndustry / Field: ${$json[\"Industry / Field (Our AI Agents are Industry Specific)\"] || \"\"}\nWould you like to add or update any roles, responsibilities, or experience?: ${$json[\"Would you like to add or update any roles, responsibilities, or experience?\"] || \"\"}\nAre there any specific achievements, projects, or measurable results you'd like highlighted?: ${$json[\"Are there any specific achievements, projects, or measurable results you'd like highlighted?\"] || \"\"}\nWould you like it: ${$json[\"Would you like it:\"] || \"\"}\nCurrent or Most Recent Job Title: ${$json[\"Current or Most Recent Job Title\"] || \"\"}\nCompany Name: ${$json[\"Company Name\"] || \"\"}\nTarget Job Title (What role are you applying for?): ${$json[\"Target Job Title (What role are you applying for?)\"] || \"\"}\nYears of Experience: ${$json[\"Years of Experience\"] || \"\"}\nOld Industry / Field: ${$json[\"OLD Industry / Field (Our AI Agents are Industry Specific)\"] || \"\"}\nCareer Stage: ${$json[\"Career Stage\"] || \"\"}\nTop Skills or Tools: ${$json[\"List your top skills or tools (comma-separated)\"] || \"\"}\nTop Achievements or Responsibilities: ${$json[\"Describe your top achievements or responsibilities\"] || \"\"}\nEducation / Certifications: ${$json[\"Education / Certifications\"] || \"\"}\nPreferred Resume Style: ${$json[\"Preferred Resume Style\"] || \"\"}\nTone Preference: ${$json[\"Tone Preference\"] || \"\"}\nAdditional Notes or Preferences: ${$json[\"Additional Notes or Preferences (Anything specific you want included?)\"] || \"\"}\n\n---\n\nUsing the information above, create a polished, results-oriented tech resume tailored for roles in IT, engineering, or software development. Highlight programming skills, problem-solving, innovation, and measurable project impact. Use professional, ATS-compatible formatting with emphasis on technical fluency and results.` }}\n",
+        "batching": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.7,
+      "position": [
+        -1936,
+        -192
+      ],
+      "id": "5c4dac8a-570a-42c2-a219-e59053be707c",
+      "name": "Tech / IT"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-4.1-mini"
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        -1872,
+        32
+      ],
+      "id": "145d7304-ed95-49c2-97df-0a394fbc9574",
+      "name": "Tech / IT Agent",
+      "credentials": {
+        "openAiApi": {
+          "id": "G3tFjZ0hwskFiRey",
+          "name": "n8n free OpenAI API credits"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "path": "approve",
+        "options": {
+          "rawBody": true,
+          "responseData": "Your decision has been recorded. ✅"
+        }
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -3504,
+        2864
+      ],
+      "id": "1ec10786-3dde-4183-85f3-ea6c2857c0fa",
+      "name": "Approval Webhook",
+      "webhookId": "d5acd56a-ad37-43b6-968a-0e7be19d1e31"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "leftValue": "status",
+                    "rightValue": "",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "0071013f-6480-409d-a1af-032ee3964ae5"
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "debfe92d-567f-4242-9f3f-f64315c9476c",
+                    "leftValue": "",
+                    "rightValue": "approve",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "a6a7c785-1333-4b0b-9673-1f9076905a74",
+                    "leftValue": "",
+                    "rightValue": "reject",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [
+        -3280,
+        2848
+      ],
+      "id": "5754b529-bb94-443b-b571-2224dbc4b25c",
+      "name": "Switch1"
+    },
+    {
+      "parameters": {
+        "sendTo": "={{$json[\"Customer Email\"]}}",
+        "subject": "Your Final Resume is Ready – {{ $json[\"Full Name\"] }}",
+        "message": "=Hi {{ $json[\"Full Name\"] }},\n\nYour resume has been reviewed and approved by the ResumeMate team. 🎉  \nWe’re excited to deliver your final version below:  \n\n<hr>\n<pre>{{ $json[\"resumeContent\"] }}</pre>\n<hr>\n\nThis resume is ready to use for your applications.  \n\nThank you for choosing ResumeMate, and best of luck in your job search!  \n– The ResumeMate Team",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        -3056,
+        2768
+      ],
+      "id": "6aab1e3d-c8b2-4d63-b4d6-cf16c6b77268",
+      "name": "Email to Customer",
+      "webhookId": "41efbc79-f7e2-478f-8ecc-eb392661a5e7",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "tSeAh7YvlnxvBeOl",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sendTo": "resumemate.ai@gmail.com",
+        "subject": "=New Resume Ready for Review – {{ $node[\"Merge\"].json[\"name\"] || $node[\"Merge\"].json[\"Full Name\"] || \"Client\" }}\n\n",
+        "message": "=<p>Hi,</p>\n<p>\n  A new resume has been generated for\n  <b>{{ $node[\"Merge\"].json[\"name\"] || $node[\"Merge\"].json[\"Full Name\"] || \"Client\" }}</b>.\n</p>\n\n<p>Please review the draft below:</p>\n<hr>\n\n<!-- Resume content from the Set node -->\n{{ $json[\"resume_html\"] }}\n\n<hr>\n<p>Choose an option:</p>\n<p>\n  <a href=\"https://resumemateai.app/approve\"\n     style=\"background-color:#34A853;color:white;padding:10px 16px;text-decoration:none;border-radius:6px;\">\n     ✅ Approve\n  </a>\n  <a href=\"https://resumemateai.app/reject\"\n     style=\"background-color:#EA4335;color:white;padding:10px 16px;text-decoration:none;border-radius:6px;margin-left:10px;\">\n     ❌ Reject\n  </a>\n</p>\n\n<p>Thanks,<br>ResumeMate</p>\n",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        -1120,
+        176
+      ],
+      "id": "b3223402-14ba-41a7-bdcf-e6eaa69469b5",
+      "name": "Email for review",
+      "webhookId": "d125d9db-a97d-4aa2-b5fc-f8333ea9c412",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "tSeAh7YvlnxvBeOl",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1O0VWIlO53dU-a-kBmp5XSHlH0jE3bKVLnUFOfSyCa9c",
+          "mode": "list",
+          "cachedResultName": "AI Resume Form (Responses)",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1O0VWIlO53dU-a-kBmp5XSHlH0jE3bKVLnUFOfSyCa9c/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 1597317596,
+          "mode": "list",
+          "cachedResultName": "Form Responses 1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1O0VWIlO53dU-a-kBmp5XSHlH0jE3bKVLnUFOfSyCa9c/edit#gid=1597317596"
+        },
+        "filtersUI": {
+          "values": [
+            {
+              "lookupColumn": "Email Address",
+              "lookupValue": "={{ $json[\"Email Address\"] }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        -3056,
+        2960
+      ],
+      "id": "2a5dbc4a-9460-4845-8f43-b4a533e488ee",
+      "name": "Get row(s) in sheet",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "FBwaBF4NdPJxzqCu",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "b46c82e7-40e6-4f63-bbaa-31c04ad715a1",
+              "leftValue": "={{ $json[\"Revisions Used\"] }}",
+              "rightValue": 2,
+              "operator": {
+                "type": "number",
+                "operation": "lt"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -2832,
+        2960
+      ],
+      "id": "5c032870-bab7-4f1a-874e-b5bed237a5ce",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "documentId": {
+          "__rl": true,
+          "value": "1O0VWIlO53dU-a-kBmp5XSHlH0jE3bKVLnUFOfSyCa9c",
+          "mode": "list",
+          "cachedResultName": "AI Resume Form (Responses)",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1O0VWIlO53dU-a-kBmp5XSHlH0jE3bKVLnUFOfSyCa9c/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 1597317596,
+          "mode": "list",
+          "cachedResultName": "Form Responses 1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1O0VWIlO53dU-a-kBmp5XSHlH0jE3bKVLnUFOfSyCa9c/edit#gid=1597317596"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Revisions Used": "={{ $json[\"Revisions Used\"] + 1 }}",
+            "Email Address": "={{ $json[\"Email Address\"] }}"
+          },
+          "matchingColumns": [
+            "Email Address"
+          ],
+          "schema": [
+            {
+              "id": "Timestamp",
+              "displayName": "Timestamp",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Full Name",
+              "displayName": "Full Name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Email Address",
+              "displayName": "Email Address",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Job Title / Role You’re Targeting ( Be Specific)",
+              "displayName": "Job Title / Role You’re Targeting ( Be Specific)",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Industry / Field (Our AI Agents are Industry Specific)",
+              "displayName": "Industry / Field (Our AI Agents are Industry Specific)",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Years of Professional Experience",
+              "displayName": "Years of Professional Experience",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Key Skills or Accomplishments",
+              "displayName": "Key Skills or Accomplishments",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Do you already have a resume you’d like us to improve?",
+              "displayName": "Do you already have a resume you’d like us to improve?",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Please upload your resume ( PDF or Word Format)",
+              "displayName": "Please upload your resume ( PDF or Word Format)",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Full Name",
+              "displayName": "Full Name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Phone Number",
+              "displayName": "Phone Number",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Education (School name, Degree, Graduation year)",
+              "displayName": "Education (School name, Degree, Graduation year)",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Desired Job Title or Industry",
+              "displayName": "Desired Job Title or Industry",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Work Experience (Job Title, Company, Dates, and Responsibilities for each role)",
+              "displayName": "Work Experience (Job Title, Company, Dates, and Responsibilities for each role)",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Key Skills or Certifications (e.g., Excel, Data Analysis, CPR Certification)",
+              "displayName": "Key Skills or Certifications (e.g., Excel, Data Analysis, CPR Certification)",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Any other relevant information",
+              "displayName": "Any other relevant information",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Please specify if you want a new resume tailored to your new role or revise your current one.",
+              "displayName": "Please specify if you want a new resume tailored to your new role or revise your current one.",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Revisions Used",
+              "displayName": "Revisions Used",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "row_number",
+              "displayName": "row_number",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "readOnly": true,
+              "removed": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        -2544,
+        2464
+      ],
+      "id": "b51a5f7a-78b1-4aaf-938a-a8a34b358e2c",
+      "name": "Update row in sheet",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "FBwaBF4NdPJxzqCu",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sendTo": "={{$json[\"Email Address\"]}}",
+        "subject": "Revision Limit Reached – Final Version",
+        "message": "=Hi {{ $json[\"Full Name\"] }},\n\nYou’ve reached the maximum of 2 revisions for your resume.  \nThis version is considered final. Please review it carefully:  \n\n<hr>\n<pre>{{ $json[\"resumeContent\"] }}</pre>\n<hr>\n\n✅ <a href=\"https://resumemateai.app.n8n.cloud/webhook-test/approve?status=approve&email={{ $json['Email Address'] }}\">Approve Final Resume</a>  \n\nThank you for working with ResumeMate!  \n– The ResumeMate Team\n\n",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        -2544,
+        3456
+      ],
+      "id": "ebc1e243-7a01-4f98-9ad8-02706e340907",
+      "name": "Revision Limit Reached",
+      "webhookId": "162589aa-500c-41d1-9127-56c09b20dbf2",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "tSeAh7YvlnxvBeOl",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=You are a professional resume editor specializing in Healthcare roles.  \n\nYou will be given a draft resume that was already generated.  \nYour task is to improve it while keeping the original structure and formatting intact.  \n\nInstructions:\n- Maintain ATS-friendly formatting (clear headings, bullet points).  \n- Improve grammar, readability, and professional tone.  \n- Highlight patient care outcomes, clinical expertise, and regulatory compliance.  \n- Emphasize teamwork, patient safety, and healthcare technology where relevant.  \n- Keep it concise (no more than 1 page).  \n\nHere is the draft resume to revise:\n-----\n{{$json[\"resumeContent\"]}}\n",
+        "batching": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.7,
+      "position": [
+        -2608,
+        2064
+      ],
+      "id": "36f0b311-f92b-450c-b384-47cfc91c16f4",
+      "name": "Healthcare Revision"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-4.1-mini"
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        -2544,
+        2288
+      ],
+      "id": "4eb48b2e-215f-43e2-aa5e-2e1611763a16",
+      "name": "Healthcare Revision Agent",
+      "credentials": {
+        "openAiApi": {
+          "id": "G3tFjZ0hwskFiRey",
+          "name": "n8n free OpenAI API credits"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "You are a professional resume editor specializing in Finance, Banking, and Accounting roles.  \n\nYou will be given a draft resume that was already generated.  \nYour task is to improve it while keeping the original structure and formatting intact.  \n\nInstructions:\n- Maintain ATS-friendly formatting (clear headings, bullet points).  \n- Improve grammar, readability, and professional tone.  \n- Emphasize quantitative results (e.g., revenue growth, portfolio size, risk reduction, cost savings).  \n- Highlight financial modeling, analysis, and deal experience.  \n- Keep it concise (no more than 1 page).  \n\nHere is the draft resume to revise:\n-----\n{{$json[\"resumeContent\"]}}\n\n",
+        "batching": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.7,
+      "position": [
+        -2608,
+        2656
+      ],
+      "id": "87856cef-7f2a-4704-b159-d71a0bf2d8fc",
+      "name": "Finance Revision"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-4.1-mini"
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        -2544,
+        2880
+      ],
+      "id": "6d3d43a5-9243-44c7-ad54-d85422ab7060",
+      "name": "Finance Revision Agent",
+      "credentials": {
+        "openAiApi": {
+          "id": "G3tFjZ0hwskFiRey",
+          "name": "n8n free OpenAI API credits"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-4.1-mini"
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        -2544,
+        4384
+      ],
+      "id": "96395ea7-55d0-46e8-8bd7-709af5aa25c9",
+      "name": "Marketing Revision Agent",
+      "credentials": {
+        "openAiApi": {
+          "id": "G3tFjZ0hwskFiRey",
+          "name": "n8n free OpenAI API credits"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=You are a professional resume editor specializing in Tech and IT roles.  \n\nYou will be given a draft resume that was already generated.  \nYour task is to improve it while keeping the original structure and formatting intact.  \n\nInstructions:\n- Maintain ATS-friendly formatting (clear headings, bullet points).  \n- Improve grammar, readability, and professional tone.  \n- Highlight technical skills, tools, frameworks, and project achievements.  \n- Emphasize measurable results (e.g., system performance gains, user adoption, revenue impact).  \n- Keep it concise (no more than 1 page).  \n\nHere is the draft resume to revise:\n-----\n{{$json[\"resumeContent\"]}}",
+        "batching": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.7,
+      "position": [
+        -2608,
+        3648
+      ],
+      "id": "323b36df-8e57-453d-ae87-a3ce2bf913d1",
+      "name": "Tech / IT Revision"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-4.1-mini"
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        -2544,
+        3872
+      ],
+      "id": "b1c13cd5-8b30-4612-94d0-8d8be7078f57",
+      "name": "Tech / IT Revision Agent",
+      "credentials": {
+        "openAiApi": {
+          "id": "G3tFjZ0hwskFiRey",
+          "name": "n8n free OpenAI API credits"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=You are a professional resume editor specializing in Education roles.  \n\nYou will be given a draft resume that was already generated.  \nYour task is to improve it while keeping the original structure and formatting intact.  \n\nInstructions:\n- Maintain ATS-friendly formatting (clear headings, bullet points).  \n- Improve grammar, readability, and professional tone.  \n- Highlight teaching outcomes, student growth, and curriculum development.  \n- Emphasize leadership in classrooms, mentoring, or program design.  \n- Keep it concise (no more than 2 pages).  \n\nHere is the draft resume to revise:\n-----\n{{$json[\"resumeContent\"]}}\n",
+        "batching": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.7,
+      "position": [
+        -2608,
+        1664
+      ],
+      "id": "3ed6156e-f236-45b7-87f6-c5efa9baa239",
+      "name": "Education Revision"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-4.1-mini"
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        -2544,
+        1888
+      ],
+      "id": "fd1ff20a-71e1-4674-81a8-7c77a3133403",
+      "name": "Education Revision Agent",
+      "credentials": {
+        "openAiApi": {
+          "id": "G3tFjZ0hwskFiRey",
+          "name": "n8n free OpenAI API credits"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "You are a professional resume editor specializing in general professional resumes across multiple industries.  \n\nYou will be given a draft resume that was already generated.  \nYour task is to improve it while keeping the original structure and formatting intact.  \n\nInstructions:\n- Maintain ATS-friendly formatting (clear headings, bullet points).  \n- Improve grammar, readability, and professional tone.  \n- Highlight measurable achievements wherever possible.  \n- Keep the language professional but adaptable to any industry.  \n- Keep it concise (no more than 1 page).  \n\nHere is the draft resume to revise:\n-----\n{{$json[\"resumeContent\"]}}\nevant achievements, and ensure the final result is ATS-friendly.\n",
+        "batching": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.7,
+      "position": [
+        -2608,
+        3056
+      ],
+      "id": "ae533ef7-b10c-4ab9-9fed-e1be05943f96",
+      "name": "Other Revision"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-4.1-mini"
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        -2544,
+        3280
+      ],
+      "id": "131f1743-2cbc-437e-bb5a-d71b4328e4be",
+      "name": "Other Revision Agent",
+      "credentials": {
+        "openAiApi": {
+          "id": "G3tFjZ0hwskFiRey",
+          "name": "n8n free OpenAI API credits"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=You are a professional resume editor specializing in Marketing and Advertising roles.  \n\nYou will be given a draft resume that was already generated.  \nYour task is to improve it while keeping the original structure and formatting intact.  \n\nInstructions:\n- Maintain ATS-friendly formatting (clear headings, bullet points).  \n- Improve grammar, readability, and professional tone.  \n- Highlight campaign performance (e.g., impressions, conversions, engagement).  \n- Emphasize brand growth, strategic planning, and creative impact.  \n- Keep it concise (no more than 1 page).  \n\nHere is the draft resume to revise:\n-----\n{{$json[\"resumeContent\"]}}\n",
+        "batching": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.7,
+      "position": [
+        -2608,
+        4160
+      ],
+      "id": "7d8254ed-37fb-4cdb-9981-3fcabb9e111a",
+      "name": "Marketing Revision"
+    },
+    {
+      "parameters": {
+        "numberInputs": 6
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        -2256,
+        2992
+      ],
+      "id": "83a48189-49bf-4b8b-b9e5-cff0bd34d741",
+      "name": "Merge1"
+    },
+    {
+      "parameters": {
+        "sendTo": "={{$json[\"Email Address\"]}}",
+        "subject": "={{$json[\"Customer Name\"]}} – Your Revised Resume is Ready",
+        "message": "=Hi {{$json[\"Customer Name\"]}},  \n<br><br>\nHere’s your <b>revised resume</b> based on your feedback.  \nWe’ve polished it further to strengthen clarity, tone, and alignment with your industry.  \n<br><br>\nPlease review this updated version carefully. If you’d like additional adjustments, you still have \n<b>{{$json[\"Revisions Left\"]}}</b> revision(s) remaining.  \n<br><br>\n-----\n<pre>\n{{$json[\"resumeContent\"]}}\n</pre>\n<br><br>\nThanks for using <b>ResumeMate</b> – we’re here to help you land the role you want!",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        -2032,
+        3056
+      ],
+      "id": "69316cf9-d3b9-40d0-8bdd-0b3b622a0c21",
+      "name": "Revised Email",
+      "webhookId": "9e5b3fda-de6f-4c5b-bf89-98df95d29792",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "tSeAh7YvlnxvBeOl",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "92324b2f-0ef4-4f36-ae93-5b5a6d494d6a",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -3504,
+        1440
+      ],
+      "id": "98c37508-ed7e-43f5-be9c-2cef44744b50",
+      "name": "Webhook",
+      "webhookId": "92324b2f-0ef4-4f36-ae93-5b5a6d494d6a",
+      "alwaysOutputData": false
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "stripe-payment",
+        "options": {}
+      },
+      "id": "affa3b08-e4c7-47ed-ac42-abf10023fa47",
+      "name": "Stripe Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [
+        -3504,
+        48
+      ],
+      "webhookId": "replace-this-with-your-existing-webhook-id"
+    },
+    {
+      "parameters": {
+        "keepOnlySet": true,
+        "values": {
+          "string": [
+            {
+              "name": "session_id",
+              "value": "={{$json[\"body\"][\"data\"][\"object\"][\"id\"]}}"
+            },
+            {
+              "name": "email",
+              "value": "={{$json[\"body\"][\"data\"][\"object\"][\"customer_details\"][\"email\"]}}"
+            },
+            {
+              "name": "name",
+              "value": "={{$json[\"body\"][\"data\"][\"object\"][\"customer_details\"][\"name\"]}}"
+            },
+            {
+              "name": "currency",
+              "value": "={{$json[\"body\"][\"data\"][\"object\"][\"currency\"]}}"
+            },
+            {
+              "name": "payment_status",
+              "value": "={{$json[\"body\"][\"data\"][\"object\"][\"payment_status\"]}}"
+            },
+            {
+              "name": "industry",
+              "value": "={{$json[\"body\"][\"data\"][\"object\"][\"metadata\"][\"industry\"]}}"
+            }
+          ],
+          "number": [
+            {
+              "name": "amount",
+              "value": "={{$json[\"body\"][\"data\"][\"object\"][\"amount_total\"]/100}}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "600493ec-d472-4656-8ff1-beb584fb4e2d",
+      "name": "Set Payment Data",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 2,
+      "position": [
+        -3056,
+        48
+      ]
+    },
+    {
+      "parameters": {
+        "sendTo": "resumemateai@gmail.com",
+        "subject": "=New ResumeMateAI Payment – {{$json[\"email\"]}}",
+        "message": "=<p>💵 <b>New payment received!</b></p>\n<ul>\n  <li><b>Amount:</b> ${{$json[\"amount\"]}}</li>\n  <li><b>Email:</b> {{$json[\"email\"]}}</li>\n  <li><b>Status:</b> {{$json[\"payment_status\"]}}</li>\n  <li><b>Session ID:</b> {{$json[\"session_id\"]}}</li>\n</ul>\n<p>✅ You’re good to go.</p>\n",
+        "options": {}
+      },
+      "id": "de1f941c-cd3a-45bb-b0b9-418db9f1f65a",
+      "name": "Send Payment Email",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2,
+      "position": [
+        -2832,
+        -112
+      ],
+      "webhookId": "ae7c5066-cf4a-402a-be2d-1e8c55727519",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "tSeAh7YvlnxvBeOl",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "3bd45f0a-183a-4a1d-9379-ed868cca06d0",
+              "leftValue": "={{ $json[\"body\"][\"type\"] === \"checkout.session.completed\" }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -3280,
+        48
+      ],
+      "id": "6849126f-d06e-4b19-a28d-1fbc728b5928",
+      "name": "IF Payment Successful"
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1UhHS8hcXRgkoHN-lMUpwubzRwyl95Yd-Q2TQulauGDU",
+          "mode": "list",
+          "cachedResultName": "Current AI Resume Form (Responses)",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1UhHS8hcXRgkoHN-lMUpwubzRwyl95Yd-Q2TQulauGDU/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 612800372,
+          "mode": "list",
+          "cachedResultName": "Payment_Records",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1UhHS8hcXRgkoHN-lMUpwubzRwyl95Yd-Q2TQulauGDU/edit#gid=612800372"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Timestamp": "={{$now}}",
+            "Name": "={{$json[\"name\"]}}",
+            "Email": "={{$json[\"email\"]}}",
+            "Amount": "={{$json[\"amount\"]}}",
+            "Currency": "={{$json[\"currency\"]}}",
+            "Session ID": "={{$json[\"session_id\"]}}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "Timestamp",
+              "displayName": "Timestamp",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Name",
+              "displayName": "Name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Email",
+              "displayName": "Email",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Amount",
+              "displayName": "Amount",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Currency",
+              "displayName": "Currency",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Industry",
+              "displayName": "Industry",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Session ID",
+              "displayName": "Session ID",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Payment Status",
+              "displayName": "Payment Status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        -2832,
+        192
+      ],
+      "id": "4814a809-74a5-484f-8e7a-cf37b6718900",
+      "name": "Append row in sheet",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "FBwaBF4NdPJxzqCu",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1UhHS8hcXRgkoHN-lMUpwubzRwyl95Yd-Q2TQulauGDU",
+          "mode": "list",
+          "cachedResultName": "Current AI Resume Form (Responses)",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1UhHS8hcXRgkoHN-lMUpwubzRwyl95Yd-Q2TQulauGDU/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 141724701,
+          "mode": "list",
+          "cachedResultName": "Form Responses 1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1UhHS8hcXRgkoHN-lMUpwubzRwyl95Yd-Q2TQulauGDU/edit#gid=141724701"
+        },
+        "filtersUI": {
+          "values": [
+            {
+              "lookupColumn": "Email Address",
+              "lookupValue": "={{$json[\"Email\"]}}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        -2608,
+        192
+      ],
+      "id": "e19e4c1a-6373-4de1-ac95-6811a8e76d45",
+      "name": "Get row(s) in sheet1",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "FBwaBF4NdPJxzqCu",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "advanced": true,
+        "mergeByFields": {
+          "values": [
+            {
+              "field1": "=email",
+              "field2": "=Email Address"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        -2384,
+        112
+      ],
+      "id": "719c7142-8a58-4781-829c-b6214e8114d2",
+      "name": "Merge2"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "d64ce214-5f79-4159-b9d9-a48c9dbc7e8a",
+              "name": "=resume_html",
+              "value": "=<!DOCTYPE html> <html>   <head>     <meta charset=\"UTF-8\" />     <style>       body {         font-family: Arial, sans-serif;         color: #222;         margin: 40px;         line-height: 1.5;       }       h1 {         font-size: 22px;         margin-bottom: 4px;       }       .contact {         font-size: 14px;         color: #444;         margin-bottom: 20px;       }       h2 {         font-size: 16px;         margin-top: 25px;         border-bottom: 1px solid #ccc;         padding-bottom: 4px;       }       p, li {         font-size: 14px;       }       ul {         margin-top: 5px;         padding-left: 20px;       }       hr {         border: 0;         border-top: 1px solid #ddd;         margin: 20px 0;       }     </style>   </head>   <body>     <h1>{{ $json[\"Full Name\"] || \"Liam McAndrews\" }}</h1>     <div class=\"contact\">       <p>         {{ $json[\"Email Address\"] || \"liam.mcandrews98@gmail.com\" }} |         {{ $json[\"Phone Number\"] || \"(516) 510-0891\" }} |         <a href=\"{{ $json[\"LinkedIn URL\"] || \"https://linkedin.com/in/liam-mcandrews\" }}\">LinkedIn</a>       </p>     </div>      <h2>Professional Summary</h2>     <p>       Creative and results-driven marketing professional with expertise in brand strategy, digital campaigns, and storytelling. Proven ability to elevate brand awareness, drive measurable ROI, and lead cross-functional teams in fast-paced environments.     </p>      <h2>Core Competencies</h2>     <ul>       <li>Brand Strategy & Positioning</li>       <li>Digital Marketing & Social Media</li>       <li>Data Analytics & Performance Metrics</li>       <li>Creative Direction & Content Strategy</li>       <li>SEO / SEM Optimization</li>       <li>Marketing Automation (HubSpot, Marketo)</li>     </ul>      <h2>Experience</h2>     <p><b>Marketing Manager</b> — [Company Name], [Location] (20XX–Present)</p>     <ul>       <li>Led multi-channel marketing initiatives increasing brand engagement by 30%.</li>       <li>Developed and executed creative campaigns aligned with business goals.</li>       <li>Collaborated with analytics teams to refine messaging and audience targeting.</li>     </ul>      <p><b>Marketing Associate</b> — [Previous Company], [Location] (20XX–20XX)</p>     <ul>       <li>Optimized advertising campaigns resulting in 25% more qualified leads.</li>       <li>Supported rebranding projects and strengthened online brand presence.</li>     </ul>      <h2>Education</h2>     <p>B.A. in Marketing — [University Name], [Year]</p>      <h2>Certifications</h2>     <ul>       <li>Google Analytics Certified</li>       <li>HubSpot Content Marketing Certified</li>       <li>Facebook Blueprint Certified</li>     </ul>   </body> </html>",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -1344,
+        176
+      ],
+      "id": "d0a75c19-62f2-4e30-afc5-d1bdf91dd1b4",
+      "name": "resume_html"
+    }
+  ],
+  "pinData": {
+    "Get row(s) in sheet": [
+      {
+        "json": {
+          "name": "First item",
+          "code": 1
+        }
+      },
+      {
+        "json": {
+          "name": "Second item",
+          "code": 2
+        }
+      }
+    ],
+    "Stripe Webhook": [
+      {
+        "json": {
+          "headers": {
+            "host": "resumemateai.app.n8n.cloud",
+            "user-agent": "Stripe/1.0 (+https://stripe.com/docs/webhooks)",
+            "content-length": "3659",
+            "accept": "*/*; q=0.5, application/json",
+            "accept-encoding": "gzip, br",
+            "cache-control": "no-cache",
+            "cdn-loop": "cloudflare; loops=1; subreqs=1",
+            "cf-connecting-ip": "52.15.183.38",
+            "cf-ew-via": "15",
+            "cf-ipcountry": "US",
+            "cf-ray": "98e0c0aef4131855-ORD",
+            "cf-visitor": "{\"scheme\":\"https\"}",
+            "cf-worker": "n8n.cloud",
+            "content-type": "application/json; charset=utf-8",
+            "stripe-signature": "t=1760378595,v1=fe2b8baed30424b315e2393ec87606a43c8653a949dcae9243d63e0602185d6b,v0=259d06ace228e5b63c44a503f626c85dc29f893d2459f8b99fb93742efb7c656",
+            "x-forwarded-for": "52.15.183.38, 172.69.59.34",
+            "x-forwarded-host": "resumemateai.app.n8n.cloud",
+            "x-forwarded-port": "443",
+            "x-forwarded-proto": "https",
+            "x-forwarded-server": "traefik-prod-users-gwc-64-799ffc96d7-hrs4j",
+            "x-is-trusted": "yes",
+            "x-real-ip": "52.15.183.38"
+          },
+          "params": {},
+          "query": {},
+          "body": {
+            "id": "evt_1SHq5X12GeDWqgx4Wm9x22cV",
+            "object": "event",
+            "api_version": "2025-08-27.basil",
+            "created": 1760378595,
+            "data": {
+              "object": {
+                "id": "cs_test_a15cdiJx6p33VW6uzHB50rtEJ26sUqRhHPaKhR9EnM62FDyEIoCdjmpAdl",
+                "object": "checkout.session",
+                "adaptive_pricing": {
+                  "enabled": true
+                },
+                "after_expiration": null,
+                "allow_promotion_codes": false,
+                "amount_subtotal": 2500,
+                "amount_total": 2500,
+                "automatic_tax": {
+                  "enabled": false,
+                  "liability": null,
+                  "provider": null,
+                  "status": null
+                },
+                "billing_address_collection": "auto",
+                "cancel_url": "https://stripe.com",
+                "client_reference_id": null,
+                "client_secret": null,
+                "collected_information": null,
+                "consent": null,
+                "consent_collection": {
+                  "payment_method_reuse_agreement": null,
+                  "promotions": "none",
+                  "terms_of_service": "none"
+                },
+                "created": 1760378500,
+                "currency": "usd",
+                "currency_conversion": null,
+                "custom_fields": [],
+                "custom_text": {
+                  "after_submit": null,
+                  "shipping_address": null,
+                  "submit": null,
+                  "terms_of_service_acceptance": null
+                },
+                "customer": null,
+                "customer_creation": "if_required",
+                "customer_details": {
+                  "address": {
+                    "city": null,
+                    "country": "US",
+                    "line1": null,
+                    "line2": null,
+                    "postal_code": "10005",
+                    "state": null
+                  },
+                  "business_name": null,
+                  "email": "liam.mcandrews98@gmail.com",
+                  "individual_name": null,
+                  "name": "Liam McAndrews",
+                  "phone": null,
+                  "tax_exempt": "none",
+                  "tax_ids": []
+                },
+                "customer_email": null,
+                "discounts": [],
+                "expires_at": 1760464900,
+                "invoice": null,
+                "invoice_creation": {
+                  "enabled": false,
+                  "invoice_data": {
+                    "account_tax_ids": null,
+                    "custom_fields": null,
+                    "description": null,
+                    "footer": null,
+                    "issuer": null,
+                    "metadata": {},
+                    "rendering_options": null
+                  }
+                },
+                "livemode": false,
+                "locale": "auto",
+                "metadata": {},
+                "mode": "payment",
+                "origin_context": null,
+                "payment_intent": "pi_3SHq5T12GeDWqgx40gp1lXZg",
+                "payment_link": "plink_1S5GiD12GeDWqgx4yf5ZofvZ",
+                "payment_method_collection": "if_required",
+                "payment_method_configuration_details": {
+                  "id": "pmc_1S5GXu12GeDWqgx4iM2viTHo",
+                  "parent": null
+                },
+                "payment_method_options": {},
+                "payment_method_types": [
+                  "card",
+                  "klarna",
+                  "link",
+                  "cashapp",
+                  "amazon_pay"
+                ],
+                "payment_status": "paid",
+                "permissions": null,
+                "phone_number_collection": {
+                  "enabled": false
+                },
+                "recovered_from": null,
+                "saved_payment_method_options": null,
+                "setup_intent": null,
+                "shipping_address_collection": null,
+                "shipping_cost": null,
+                "shipping_options": [],
+                "status": "complete",
+                "submit_type": "auto",
+                "subscription": null,
+                "success_url": "https://docs.google.com/forms/d/e/1FAIpQLSdilGgLYmrAMTH2dFSNonL_IYAh4BRSOc_wxuArjQ0mhmQAtw/viewform?usp=dialog",
+                "total_details": {
+                  "amount_discount": 0,
+                  "amount_shipping": 0,
+                  "amount_tax": 0
+                },
+                "ui_mode": "hosted",
+                "url": null,
+                "wallet_options": null
+              }
+            },
+            "livemode": false,
+            "pending_webhooks": 3,
+            "request": {
+              "id": null,
+              "idempotency_key": null
+            },
+            "type": "checkout.session.completed"
+          },
+          "webhookUrl": "https://resumemateai.app.n8n.cloud/webhook/stripe-payment",
+          "executionMode": "production"
+        }
+      }
+    ]
+  },
+  "connections": {
+    "Switch": {
+      "main": [
+        [
+          {
+            "node": "Tech / IT",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Finance",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Marketing",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Healthcare",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Education",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Other",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Finance Agent": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Finance",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Marketing Agent": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Marketing",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Healthcare Agent": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Healthcare",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Education Agent": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Education",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Other Agent": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Other",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Other": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Education": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Healthcare": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 3
+          }
+        ]
+      ]
+    },
+    "Marketing": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 4
+          }
+        ]
+      ]
+    },
+    "Finance": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 5
+          }
+        ]
+      ]
+    },
+    "Merge": {
+      "main": [
+        [
+          {
+            "node": "resume_html",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Tech / IT": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 2
+          }
+        ]
+      ]
+    },
+    "Tech / IT Agent": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Tech / IT",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Approval Webhook": {
+      "main": [
+        [
+          {
+            "node": "Switch1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch1": {
+      "main": [
+        [],
+        [
+          {
+            "node": "Email to Customer",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Get row(s) in sheet",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    },
+    "Get row(s) in sheet": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "Update row in sheet",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Healthcare Revision",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Finance Revision",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Other Revision",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Education Revision",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Tech / IT Revision",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Marketing Revision",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Revision Limit Reached",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update row in sheet": {
+      "main": [
+        []
+      ]
+    },
+    "Healthcare Revision Agent": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Healthcare Revision",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Finance Revision Agent": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Finance Revision",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Marketing Revision Agent": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Marketing Revision",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Tech / IT Revision Agent": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Tech / IT Revision",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Education Revision Agent": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Education Revision",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Other Revision Agent": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Other Revision",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Other Revision": {
+      "main": [
+        [
+          {
+            "node": "Merge1",
+            "type": "main",
+            "index": 3
+          }
+        ]
+      ]
+    },
+    "Education Revision": {
+      "main": [
+        [
+          {
+            "node": "Merge1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Healthcare Revision": {
+      "main": [
+        [
+          {
+            "node": "Merge1",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Finance Revision": {
+      "main": [
+        [
+          {
+            "node": "Merge1",
+            "type": "main",
+            "index": 2
+          }
+        ]
+      ]
+    },
+    "Tech / IT Revision": {
+      "main": [
+        [
+          {
+            "node": "Merge1",
+            "type": "main",
+            "index": 4
+          }
+        ]
+      ]
+    },
+    "Marketing Revision": {
+      "main": [
+        [
+          {
+            "node": "Merge1",
+            "type": "main",
+            "index": 5
+          }
+        ]
+      ]
+    },
+    "Merge1": {
+      "main": [
+        [
+          {
+            "node": "Revised Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Stripe Webhook": {
+      "main": [
+        [
+          {
+            "node": "IF Payment Successful",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set Payment Data": {
+      "main": [
+        [
+          {
+            "node": "Send Payment Email",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Append row in sheet",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Merge2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF Payment Successful": {
+      "main": [
+        [
+          {
+            "node": "Set Payment Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send Payment Email": {
+      "main": [
+        []
+      ]
+    },
+    "Append row in sheet": {
+      "main": [
+        [
+          {
+            "node": "Get row(s) in sheet1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get row(s) in sheet1": {
+      "main": [
+        [
+          {
+            "node": "Merge2",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Merge2": {
+      "main": [
+        [
+          {
+            "node": "Switch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "resume_html": {
+      "main": [
+        [
+          {
+            "node": "Email for review",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "cfcba9fb-09f6-435f-81bf-c35bcb0f691e",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "6e41c8966058236a06754795cf08085b57b4b86a6d09a5d4f2e583561418308b"
+  },
+  "id": "HwqhgyBuyxPCNKjJ",
+  "tags": []
+}
