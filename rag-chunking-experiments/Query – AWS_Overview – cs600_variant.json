@@ -1,0 +1,549 @@
+{
+  "name": "Query – AWS_Overview – cs600_variant",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "b9ac927e-f840-4ef1-a9c2-d97d0f087488",
+        "responseMode": "lastNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        0,
+        0
+      ],
+      "id": "6e39f673-7c71-4c19-a298-d5750bb7e475",
+      "name": "Webhook",
+      "webhookId": "b9ac927e-f840-4ef1-a9c2-d97d0f087488"
+    },
+    {
+      "parameters": {
+        "mode": "load",
+        "pineconeIndex": {
+          "__rl": true,
+          "value": "rag-chapter4",
+          "mode": "list",
+          "cachedResultName": "rag-chapter4"
+        },
+        "prompt": "={{$json.body.question}}",
+        "topK": 15,
+        "options": {
+          "pineconeNamespace": "aws_overview_v1_fixed_cs600_ol100"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.vectorStorePinecone",
+      "typeVersion": 1.3,
+      "position": [
+        224,
+        0
+      ],
+      "id": "d243e6ce-6e92-4148-9db6-ed59a9b32b88",
+      "name": "Pinecone Vector Store",
+      "credentials": {
+        "pineconeApi": {
+          "id": "5USGSKskFPhBQJZ3",
+          "name": "PineconeApi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Input: items from Pinecone Get Many / Vector Store\n// Goal: build a single merged context string for the LLM,\n// while filtering out empty/no-text chunks and preserving stats for evaluation.\n\nconst question = $items(\"Webhook\")[0].json.body.question;\n\nconst raw = items.map((it, i) => {\n  const text = (it.json?.document?.pageContent ?? \"\").trim();\n  const meta = it.json?.document?.metadata ?? {};\n\n  const id =\n    meta.chunk_index ??\n    meta.id ??\n    it.json?.id ??\n    `chunk_${i + 1}`;\n\n  const score = it.json?.score ?? null;\n\n  return { id, score, text };\n});\n\n// ✅ drop vectors with no text (this effectively excludes the “bad upload” results)\nconst chunks = raw.filter(c => c.text.length > 0);\n\nconst context = chunks\n  .map(c => `SOURCE ${c.id}:\\n${c.text}`)\n  .join(\"\\n\\n---\\n\\n\");\n\nreturn [{\n  json: {\n    question,\n    context,\n\n    // These don’t affect the LLM unless you reference them in the prompt\n    chunks,\n    retrieved_vectors: items.length,\n    usable_vectors: chunks.length,\n    dropped_vectors: items.length - chunks.length\n  }\n}];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        576,
+        0
+      ],
+      "id": "7b65af7f-71a5-404b-805f-37820bc9f093",
+      "name": "Pinecone output into string",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=You are a helpful assistant. Answer the QUESTION using only the CONTEXT.\nIf the context is insufficient, say so.\n\nQUESTION:\n{{$json.question}}\n\nCONTEXT:\n{{$json.context}}\n\n",
+        "messages": {
+          "messageValues": [
+            {
+              "message": "You are a RAG assistant. Answer using only the provided CONTEXT. If the answer is not in the context, say “I don’t know.” Cite sources as [chunk_index=…]."
+            }
+          ]
+        },
+        "batching": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.7,
+      "position": [
+        800,
+        0
+      ],
+      "id": "aeaea61d-81ff-4699-a585-89a18e7a0331",
+      "name": "Basic LLM Chain"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-4.1-mini"
+        },
+        "builtInTools": {},
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.3,
+      "position": [
+        880,
+        224
+      ],
+      "id": "ffd949fa-5abc-4734-98d6-a32c17447be9",
+      "name": "OpenAI Chat Model",
+      "credentials": {
+        "openAiApi": {
+          "id": "Hd5NQstAQvUarYm0",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.embeddingsOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        304,
+        224
+      ],
+      "id": "0ba62557-9da2-4bdc-a129-9e0da19c64e0",
+      "name": "Embeddings OpenAI",
+      "credentials": {
+        "openAiApi": {
+          "id": "Hd5NQstAQvUarYm0",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "/**\n * Evaluator – Fast Metrics + Attribution\n *\n * Inputs expected on $json:\n * - question\n * - answer\n * - context\n * - chunks: [{ id, score, text }]\n *\n * Outputs:\n * - token estimates\n * - chunk utilization\n * - attribution metrics\n */\n\n// ---------------- helpers ----------------\nfunction estTokens(str) {\n  if (!str) return 0;\n  return Math.ceil(str.length / 4);\n}\n\nfunction wordSet(str) {\n  return new Set(\n    (str || \"\")\n      .toLowerCase()\n      .replace(/[^a-z0-9\\s]/g, \" \")\n      .split(/\\s+/)\n      .filter(w => w.length >= 3)\n  );\n}\n\n// ---------------- inputs ----------------\nconst question = $json.question ?? \"\";\nconst answer = $json.answer ?? \"\";\nconst context = $json.context ?? \"\";\nconst chunks = Array.isArray($json.chunks) ? $json.chunks : [];\n\n// ---------------- token estimates ----------------\nconst questionTokens = estTokens(question);\nconst contextTokens = estTokens(context);\nconst answerTokens = estTokens(answer);\n\n// ---------------- utilization (overlap heuristic) ----------------\nconst answerWords = wordSet(answer);\n\nconst perChunk = chunks.map(c => {\n  const chunkWords = wordSet(c.text);\n  let overlap = 0;\n\n  for (const w of answerWords) {\n    if (chunkWords.has(w)) overlap++;\n  }\n\n  const denom = Math.max(1, answerWords.size);\n  const overlapRatio = overlap / denom;\n\n  return {\n    id: c.id,\n    score: c.score ?? null,\n    overlap_terms: overlap,\n    overlap_ratio: overlapRatio,\n    chunk_tokens_est: estTokens(c.text),\n  };\n});\n\nconst THRESH = 0.08;\n\nconst usedChunks = perChunk.filter(c => c.overlap_ratio >= THRESH);\nconst unusedChunks = perChunk.filter(c => c.overlap_ratio < THRESH);\n\nconst usedChunkIds = usedChunks.map(c => c.id);\nconst unusedChunkIds = unusedChunks.map(c => c.id);\n\n// ---------------- token utilization ----------------\nconst usedContextTokens = usedChunks.reduce(\n  (sum, c) => sum + c.chunk_tokens_est,\n  0\n);\n\nconst unusedContextTokens = Math.max(\n  0,\n  contextTokens - usedContextTokens\n);\n\nconst unusedContextPct =\n  contextTokens > 0 ? unusedContextTokens / contextTokens : 0;\n\n// ---------------- attribution (heuristic for now) ----------------\nconst usableChunkCount = chunks.length;\nconst citedChunkCountHeuristic = usedChunkIds.length;\n\nconst attributionHeuristic =\n  usableChunkCount > 0\n    ? `${citedChunkCountHeuristic}/${usableChunkCount}`\n    : \"0/0\";\n\n// ---------------- output ----------------\nreturn [\n  {\n    json: {\n      ...$json,\n\n      tokens_est: {\n        question: questionTokens,\n        context: contextTokens,\n        answer: answerTokens,\n        total_input: questionTokens + contextTokens,\n      },\n\n      utilization: {\n        used_chunk_ids: usedChunkIds,\n        unused_chunk_ids: unusedChunkIds,\n        used_context_tokens_est: usedContextTokens,\n        unused_context_tokens_est: unusedContextTokens,\n        unused_context_pct_est: unusedContextPct,\n      },\n\n      attribution: {\n        method: \"heuristic_overlap\",\n        cited_chunks: citedChunkCountHeuristic,\n        usable_chunks: usableChunkCount,\n        ratio: attributionHeuristic,\n      },\n\n      per_chunk: perChunk,\n    },\n  },\n];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1376,
+        0
+      ],
+      "id": "f24fda9e-19d8-4e49-981d-8fa1c1aa3371",
+      "name": "Eval - Fast Metrics"
+    },
+    {
+      "parameters": {
+        "jsCode": "/**\n * Evaluator Input Assembler (drop-in right after Basic LLM Chain)\n *\n * Assumptions from your setup:\n * - The previous code node (that builds the context) is named:\n *     \"Pinecone output into string\"\n * - The LLM output field is:\n *     $json.text\n *\n * Output:\n * - question, answer, context, chunks, and retrieval bookkeeping fields\n *   (so Workflow B can compute utilization / efficiency metrics)\n */\n\n// 1) Grab the LLM answer\nconst answer = ($json.text ?? \"\").trim();\n\n// 2) Reference the upstream context-builder node by its EXACT name\nconst ctxNodeName = \"Pinecone output into string\";\n\n// 3) Pull its output\nconst ctxItems = $items(ctxNodeName);\nif (!ctxItems || ctxItems.length === 0) {\n  throw new Error(\n    `No items found from node \"${ctxNodeName}\". ` +\n    `Check the node name matches exactly and that it executes before this node.`\n  );\n}\n\nconst ctx = ctxItems[0].json || {};\n\n// 4) Normalize expected fields\nconst question =\n  ctx.question ??\n  ctx.body?.question ??\n  $items(\"Webhook\")?.[0]?.json?.body?.question ??\n  \"\";\n\nconst context = ctx.context ?? \"\";\n\nconst chunks = Array.isArray(ctx.chunks) ? ctx.chunks : [];\n\n// Optional stats (may be null if you didn’t include them upstream)\nconst retrieved_vectors = ctx.retrieved_vectors ?? null;\nconst usable_vectors = ctx.usable_vectors ?? null;\nconst dropped_vectors = ctx.dropped_vectors ?? null;\n\n// 5) Return one clean item for the evaluator pipeline\nreturn [\n  {\n    json: {\n      question,\n      answer,\n      context,\n      chunks,\n      retrieved_vectors,\n      usable_vectors,\n      dropped_vectors,\n    },\n  },\n];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1152,
+        0
+      ],
+      "id": "f2419eba-2728-4b76-80d9-b2452ca108dd",
+      "name": "Eval Assembler"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Question:\n{{$json.question}}\n\nAnswer:\n{{$json.answer}}\n\nRetrieved chunks:\n{{$json.chunks.map(c => `[${c.id}] ${c.text}`).join(\"\\n\\n\")}}\n\nReturn ONLY valid JSON with keys:\n- verdict: one of [\"SUPPORTED\",\"PARTIAL\",\"UNSUPPORTED\",\"IDK_APPROPRIATE\",\"IDK_INAPPROPRIATE\"]\n- cited_chunk_ids: array of chunk ids that directly support the answer\n- rationale: short\n- answer_quality: number from 0 to 10\n- retrieval_relevance: number from 0 to 10\n\n",
+        "messages": {
+          "messageValues": [
+            {
+              "message": "You are a strict RAG evaluator.\nReturn JSON only. No markdown.\n"
+            }
+          ]
+        },
+        "batching": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.7,
+      "position": [
+        1600,
+        0
+      ],
+      "id": "56edfd58-bc9c-4003-a50c-033b29b6da41",
+      "name": "Evaluator"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-4.1-mini"
+        },
+        "builtInTools": {},
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.3,
+      "position": [
+        1680,
+        224
+      ],
+      "id": "0fbf23a9-c212-4f4a-84e4-5f20cafdbfe3",
+      "name": "OpenAI Chat Model1",
+      "credentials": {
+        "openAiApi": {
+          "id": "Hd5NQstAQvUarYm0",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "/**\n * Evaluator – Attribution & Final Fields\n *\n * Adds experiment metadata columns for Sheets:\n * - chunk_size, chunk_overlap, top_k, experiment_id, namespace\n *\n * Requires from previous nodes:\n * - cited_chunk_ids (from Evaluator LLM output parser)\n * - chunks[] (from earlier context builder)\n * - utilization + tokens_est (from fast metrics)\n */\n\n// ---- EXPERIMENT METADATA (baseline: set these to match your current setup) ----\nconst chunk_size = 600;      // <-- change later when you re-chunk/reupload\nconst chunk_overlap = 100;    // <-- change later when you re-chunk/reupload\nconst top_k = 15;             // <-- should match your Pinecone topK setting\nconst namespace = \"aws_overview_v1_fixed_cs600_ol100\"; // <-- put your current namespace here\nconst experiment_id = `cs${chunk_size}_ol${chunk_overlap}_k${top_k}`;\n\n// Pull citation data from evaluator LLM\nconst cited = Array.isArray($json.cited_chunk_ids)\n  ? $json.cited_chunk_ids\n  : [];\n\n// Pull chunk list (usable retrieved chunks)\nconst chunks = Array.isArray($json.chunks) ? $json.chunks : [];\nconst usableChunks = chunks.length;\n\n// Attribution ratio like \"2/3\"\nconst attributionRatio =\n  usableChunks > 0\n    ? `${cited.length}/${usableChunks}`\n    : \"0/0\";\n\n// Optional: simple overall score (you can tweak later)\nconst verdictWeights = {\n  SUPPORTED: 1.0,\n  PARTIAL: 0.6,\n  IDK_APPROPRIATE: 0.8,\n  IDK_INAPPROPRIATE: 0.2,\n  UNSUPPORTED: 0.0\n};\n\nconst verdictScore = verdictWeights[$json.verdict] ?? 0;\n\nconst efficiencyScore =\n  1 - ($json.utilization?.unused_context_pct_est ?? 0);\n\nconst overallScore =\n  0.6 * verdictScore + 0.4 * efficiencyScore;\n\n// Prep readable strings (useful for Sheets)\nreturn [{\n  json: {\n    ...$json,\n\n    // ---- NEW COLUMNS FOR SHEETS ----\n    chunk_size,\n    chunk_overlap,\n    top_k,\n    experiment_id,\n    namespace,\n\n    attribution: {\n      method: \"llm_citations\",\n      cited_chunks: cited.length,\n      usable_chunks: usableChunks,\n      ratio: attributionRatio\n    },\n\n    scores: {\n      verdict_score: verdictScore,\n      efficiency_score: efficiencyScore,\n      overall_score: overallScore\n    },\n\n    used_chunk_ids_str:\n      ($json.utilization?.used_chunk_ids ?? []).join(\", \"),\n    cited_chunk_ids_str:\n      cited.join(\", \"),\n\n    timestamp: new Date().toISOString()\n  }\n}];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2176,
+        0
+      ],
+      "id": "b9b21989-5769-4f29-8668-95eb80bed170",
+      "name": "Evaluator – Attribution & Final Fields"
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1e9tk7_GuwHhQIhVy-fMiM33BWlC02hD9E2CPipeTuYU",
+          "mode": "list",
+          "cachedResultName": "Chunking Evaluation",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1e9tk7_GuwHhQIhVy-fMiM33BWlC02hD9E2CPipeTuYU/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1e9tk7_GuwHhQIhVy-fMiM33BWlC02hD9E2CPipeTuYU/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "timestamp": "={{ $json.timestamp }}",
+            "question": "={{ $json.question }}",
+            "answer": "={{ $json.answer }}",
+            "verdict": "={{ $json.verdict }}",
+            "attribution.ratio": "={{ $json.attribution.ratio }}",
+            "utilization.unused_context_pct_est": "={{ $json.utilization.unused_context_pct_est }}",
+            "scores.overall_score": "={{ $json.scores.overall_score }}",
+            "chunk_size": "={{ $json.chunk_size }}",
+            "chunk_overlap": "={{ $json.chunk_overlap }}",
+            "top_k": "={{ $json.top_k }}",
+            "experiment_id": "={{ $json.experiment_id }}",
+            "namespace": "={{ $json.namespace }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "timestamp",
+              "displayName": "timestamp",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "question",
+              "displayName": "question",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "answer",
+              "displayName": "answer",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "verdict",
+              "displayName": "verdict",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "attribution.ratio",
+              "displayName": "attribution.ratio",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "utilization.unused_context_pct_est",
+              "displayName": "utilization.unused_context_pct_est",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "scores.overall_score",
+              "displayName": "scores.overall_score",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "chunk_size",
+              "displayName": "chunk_size",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "chunk_overlap",
+              "displayName": "chunk_overlap",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "top_k",
+              "displayName": "top_k",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "experiment_id",
+              "displayName": "experiment_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "namespace",
+              "displayName": "namespace",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        2400,
+        0
+      ],
+      "id": "877edb79-873b-4f42-86a5-f5170838b24a",
+      "name": "Append row in sheet",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "FBwaBF4NdPJxzqCu",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// 1. Parse evaluator JSON (it lives in $json.text)\nlet parsed;\ntry {\n  parsed = JSON.parse($json.text);\n} catch (e) {\n  parsed = {\n    verdict: \"UNSUPPORTED\",\n    cited_chunk_ids: [],\n    rationale: \"Evaluator output not valid JSON\",\n    answer_quality: 0,\n    retrieval_relevance: 0\n  };\n}\n\n// 2. Pull back full upstream data (this node NAME MUST MATCH)\nconst upstream = $items(\"Eval - Fast Metrics\")[0].json;\n\n// 3. Merge everything into one clean object\nreturn [{\n  json: {\n    ...upstream,\n    ...parsed\n  }\n}];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1952,
+        0
+      ],
+      "id": "2d8275e0-41d0-49b3-b907-f154aaac1fe2",
+      "name": "Parse Eval JSON + Merge"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Pinecone Vector Store",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Pinecone Vector Store": {
+      "main": [
+        [
+          {
+            "node": "Pinecone output into string",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Pinecone output into string": {
+      "main": [
+        [
+          {
+            "node": "Basic LLM Chain",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Basic LLM Chain",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Basic LLM Chain": {
+      "main": [
+        [
+          {
+            "node": "Eval Assembler",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Embeddings OpenAI": {
+      "ai_embedding": [
+        [
+          {
+            "node": "Pinecone Vector Store",
+            "type": "ai_embedding",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Eval Assembler": {
+      "main": [
+        [
+          {
+            "node": "Eval - Fast Metrics",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Eval - Fast Metrics": {
+      "main": [
+        [
+          {
+            "node": "Evaluator",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model1": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Evaluator",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Evaluator": {
+      "main": [
+        [
+          {
+            "node": "Parse Eval JSON + Merge",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Evaluator – Attribution & Final Fields": {
+      "main": [
+        [
+          {
+            "node": "Append row in sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Eval JSON + Merge": {
+      "main": [
+        [
+          {
+            "node": "Evaluator – Attribution & Final Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "8409928d-df4c-43e3-851a-32cc138b8fe1",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "6e41c8966058236a06754795cf08085b57b4b86a6d09a5d4f2e583561418308b"
+  },
+  "id": "iDPfTv59cyc0LuEa",
+  "tags": []
+}

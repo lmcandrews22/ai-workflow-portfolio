@@ -1,0 +1,109 @@
+{
+  "name": "Debug – Pinecone Retrieval – AWS_Overview",
+  "nodes": [
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ],
+      "id": "26143d3e-064a-4cc8-aa2b-76d839970f44",
+      "name": "When clicking ‘Execute workflow’"
+    },
+    {
+      "parameters": {
+        "mode": "load",
+        "pineconeIndex": {
+          "__rl": true,
+          "value": "rag-chapter4",
+          "mode": "list",
+          "cachedResultName": "rag-chapter4"
+        },
+        "prompt": "Amazon RDS DynamoDB Aurora Redshift are AWS database services. List a few AWS database services.",
+        "topK": 3,
+        "options": {
+          "pineconeNamespace": "aws_overview_v1_fixed_cs1200_ol200",
+          "metadata": {
+            "metadataValues": [
+              {
+                "name": "run_id",
+                "value": "=aws_overview_v1_fixed_cs1200_ol200"
+              }
+            ]
+          }
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.vectorStorePinecone",
+      "typeVersion": 1.3,
+      "position": [
+        208,
+        0
+      ],
+      "id": "ca03e6ed-d0c6-4634-8ef9-ec9cc99f08ed",
+      "name": "Pinecone Vector Store",
+      "credentials": {
+        "pineconeApi": {
+          "id": "5USGSKskFPhBQJZ3",
+          "name": "PineconeApi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.embeddingsOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        304,
+        208
+      ],
+      "id": "bc28bde6-b443-4637-a9fa-ba6d7ed323c8",
+      "name": "Embeddings OpenAI",
+      "credentials": {
+        "openAiApi": {
+          "id": "Hd5NQstAQvUarYm0",
+          "name": "OpenAi account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "When clicking ‘Execute workflow’": {
+      "main": [
+        [
+          {
+            "node": "Pinecone Vector Store",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Embeddings OpenAI": {
+      "ai_embedding": [
+        [
+          {
+            "node": "Pinecone Vector Store",
+            "type": "ai_embedding",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "4446d189-562d-46c7-a873-0c7332689f62",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "6e41c8966058236a06754795cf08085b57b4b86a6d09a5d4f2e583561418308b"
+  },
+  "id": "8DaAdNEpyMqwiN5X",
+  "tags": []
+}
