@@ -7,6 +7,7 @@ This repository contains selected n8n workflows showcasing automation and applie
 - **LLM Scraping Workflow** (Crawling + Extraction + LLM)
 - **Smart Meal Planner & Grocery Workflow** (AI recipes + grocery list generation)
 - **LLM Attribution Workflow** (Prompt evaluation + model comparison)
+- RAG Chunking Experiments (n8n + Pinecone + OpenAI)
 
 ### Viewing the Workflows
 - JSON files are located in the `Workflows/` folder
