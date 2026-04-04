@@ -63,8 +63,8 @@ Supabase (Findings Table for UI consumption)
 
 ##  Viewing the Workflows
 
-* JSON files are located in the `Workflows/` folder
-* Screenshots and supporting assets are located in `docs/`
+* JSON files are located in the `Workflows/` folder  
+* Screenshots and supporting assets are located in `docs/` (includes n8n workflows, database tables, and UI views)  
 * Credentials/API keys have been removed for security
 
 ---
